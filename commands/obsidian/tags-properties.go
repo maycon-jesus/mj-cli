@@ -2,10 +2,10 @@ package obsidian
 
 import (
 	"fmt"
+	"github.com/maycon-jesus/mj-cli/commands/obsidian/utils"
+	"github.com/maycon-jesus/mj-cli/utils/mySlices"
 	"github.com/spf13/cobra"
 	"maps"
-	"mj-cli/commands/obsidian/utils"
-	"mj-cli/utils/mySlices"
 	"os"
 	"path/filepath"
 	"slices"

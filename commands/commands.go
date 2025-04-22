@@ -1,8 +1,8 @@
 package commands
 
 import (
+	"github.com/maycon-jesus/mj-cli/commands/obsidian"
 	"github.com/spf13/cobra"
-	"mj-cli/commands/obsidian"
 )
 
 var CmdRoot = &cobra.Command{

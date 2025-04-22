@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"mj-cli/commands"
+	"github.com/maycon-jesus/mj-cli/commands"
 	"os"
 )
 

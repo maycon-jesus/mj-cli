@@ -1,4 +1,4 @@
-module mj-cli
+module github.com/maycon-jesus/mj-cli
 
 go 1.24
 
