@@ -13,5 +13,6 @@ var CmdRoot = &cobra.Command{
 
 func GetCommandRoot() *cobra.Command {
 	CmdRoot.AddCommand(obsidian.GetCommandObsidian())
+	CmdRoot.AddCommand(GetCommandConfig())
 	return CmdRoot
 }
