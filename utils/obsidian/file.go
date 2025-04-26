@@ -11,11 +11,11 @@ type ObsidianFile struct {
 	Name        string
 	Path        string
 	IsNote      bool
-	frontmatter FilePropertiesMap
+	Frontmatter FilePropertiesMap
 }
 
 func (f *ObsidianFile) GetProperty(key string) (Frontmatter *FileProperty, ok bool) {
-	value, ok := f.frontmatter[key]
+	value, ok := f.Frontmatter[key]
 	return value, ok
 }
 
@@ -27,18 +27,16 @@ func (f *ObsidianFile) GetPropertyValues(key string) (values []string, ok bool) 
 	return values, ok
 }
 
-// AddProperty adds or updates a frontmatter entry with the given key, values, and metadata in the ObsidianFile's frontmatter map.
-func (f *ObsidianFile) AddProperty(key FilePropertyName, values []string, metadata FilePropertyMetadata) {
+// AddProperty adds or updates a Frontmatter entry with the given key, values, and metadata in the ObsidianFile's Frontmatter map.
+func (f *ObsidianFile) AddProperty(key FilePropertyName, values []string) {
 	value, ok := f.GetProperty(key)
 	if ok {
 		value.AddValues(values...)
-		value.AddMetadataMap(metadata)
 	} else {
 		frontmatter := &FileProperty{}
 		frontmatter.AddValues(values...)
-		frontmatter.SetMetadata(metadata)
 
-		f.frontmatter[key] = frontmatter
+		f.Frontmatter[key] = frontmatter
 	}
 	return
 }
@@ -70,7 +68,7 @@ func (f *ObsidianFile) ReadFrontmatter() *ObsidianFile {
 
 		if text == "---" {
 			if lastKey != "" {
-				f.AddProperty(lastKey, lastKeyValues, FilePropertyMetadata{})
+				f.AddProperty(lastKey, lastKeyValues)
 			}
 			ignoreLines = true
 			continue
@@ -82,7 +80,7 @@ func (f *ObsidianFile) ReadFrontmatter() *ObsidianFile {
 			// Adiciona a ultima propriedade salva no map
 			// Pois ja mudou o nome da propriedade
 			if lastKey != "" {
-				f.AddProperty(lastKey, lastKeyValues, FilePropertyMetadata{})
+				f.AddProperty(lastKey, lastKeyValues)
 				lastKeyValues = nil
 				lastKey = ""
 			}
@@ -101,31 +99,6 @@ func (f *ObsidianFile) ReadFrontmatter() *ObsidianFile {
 
 	}
 
-	for k, v := range f.frontmatter {
-		if !strings.HasPrefix(k, "metadata.") {
-			continue
-		}
-
-		metadataParts := strings.Split(k, ".")
-		if len(metadataParts) != 3 {
-			continue
-		}
-
-		targetPropertyName := metadataParts[1]
-
-		metadataPropertyName := metadataParts[2]
-
-		targetProperty, ok := f.GetProperty(targetPropertyName)
-		if !ok {
-			continue
-		}
-		if len(v.values) == 0 {
-			targetProperty.AddMetadata(metadataPropertyName, "")
-		} else {
-			targetProperty.AddMetadata(metadataPropertyName, v.values[0])
-		}
-	}
-
 	return f
 }
 
@@ -140,10 +113,10 @@ func (f *ObsidianFile) WriteFile() {
 	lineCounter := 0
 	fileLines := make([]string, 0)
 
-	if len(f.frontmatter) > 0 {
+	if len(f.Frontmatter) > 0 {
 		fileLines = append(fileLines, "---")
 	}
-	for k, v := range f.frontmatter {
+	for k, v := range f.Frontmatter {
 		valuesLen := len(v.values)
 		if valuesLen == 0 {
 			fileLines = append(fileLines, fmt.Sprintf("%s:", k))
@@ -156,7 +129,7 @@ func (f *ObsidianFile) WriteFile() {
 			}
 		}
 	}
-	if len(f.frontmatter) > 0 {
+	if len(f.Frontmatter) > 0 {
 		fileLines = append(fileLines, "---")
 	}
 
@@ -188,6 +161,6 @@ func createObsidianFile(Name string, Path string, IsNote bool) *ObsidianFile {
 		Name:        Name,
 		Path:        Path,
 		IsNote:      IsNote,
-		frontmatter: FilePropertiesMap{},
+		Frontmatter: FilePropertiesMap{},
 	}
 }

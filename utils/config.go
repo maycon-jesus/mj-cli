@@ -9,7 +9,6 @@ import (
 type ConfigValueValidator = func(value string) (bool, string)
 
 type ConfigValue struct {
-	Name         string
 	Description  string
 	DefaultValue string
 	Validators   []ConfigValueValidator

@@ -1,20 +1,28 @@
 package obsidian
 
 import (
+	"github.com/maycon-jesus/mj-cli/utils"
 	"github.com/maycon-jesus/mj-cli/utils/myIo"
+	"os"
 	"path/filepath"
 	"sync"
 )
 
 type Vault struct {
-	Files []*ObsidianFile
-	Notes []*ObsidianFile
-	Path  string
+	Files       []*ObsidianFile
+	Notes       []*ObsidianFile
+	Path        string
+	TagsDirPath string
+	Tag
 }
 
-func NewVault(path string) *Vault {
+func NewVault(path string, tagsDirPath string) *Vault {
+	wd, _ := os.Getwd()
+	path, _ = utils.NormalizePath(wd, path)
+	tagsDirPath, _ = utils.NormalizePath(path, tagsDirPath)
 	return &Vault{
-		Path: path,
+		Path:        path,
+		TagsDirPath: tagsDirPath,
 	}
 }
 
@@ -33,7 +41,7 @@ func (v *Vault) LoadAllFiles() {
 			isNote := f.Ext == ".md"
 			obsidianFile := createObsidianFile(f.Name, f.Path, isNote)
 
-			//read frontmatter
+			//read Frontmatter
 			wgAfterRead.Add(1)
 			go func() {
 				defer wgAfterRead.Done()
@@ -62,4 +70,33 @@ func (v *Vault) GetNote(path string) *ObsidianFile {
 	}
 
 	return nil
+}
+
+func (v *Vault) GetDirectoryNotes(path string) []*ObsidianFile {
+	var npath string
+	if filepath.IsAbs(path) {
+		npath = path
+	} else {
+		npath = filepath.Join(v.Path, path)
+	}
+	var notes []*ObsidianFile
+	for _, note := range v.Notes {
+		if filepath.Dir(note.Path) == npath {
+			notes = append(notes, note)
+		}
+	}
+
+	return notes
+}
+
+func (v *Vault) GetTagTemplateNote(tag string) (*ObsidianFile, bool) {
+	path := filepath.Join(v.TagsDirPath, tag+".md")
+
+	for _, note := range v.Notes {
+		if note.Path == path {
+			return note, true
+		}
+	}
+
+	return nil, false
 }
