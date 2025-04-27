@@ -8,10 +8,11 @@ import (
 )
 
 type ObsidianFile struct {
-	Name        string
-	Path        string
-	IsNote      bool
-	Frontmatter FilePropertiesMap
+	Name          string
+	Path          string
+	IsNote        bool
+	IsTagTemplate bool
+	Frontmatter   FilePropertiesMap
 }
 
 func (f *ObsidianFile) GetProperty(key string) (Frontmatter *FileProperty, ok bool) {
@@ -156,11 +157,12 @@ func (f *ObsidianFile) WriteFile() {
 
 }
 
-func createObsidianFile(Name string, Path string, IsNote bool) *ObsidianFile {
+func createObsidianFile(Name string, Path string, IsNote bool, IsTagTemplate bool) *ObsidianFile {
 	return &ObsidianFile{
-		Name:        Name,
-		Path:        Path,
-		IsNote:      IsNote,
-		Frontmatter: FilePropertiesMap{},
+		Name:          Name,
+		Path:          Path,
+		IsNote:        IsNote,
+		IsTagTemplate: IsTagTemplate,
+		Frontmatter:   FilePropertiesMap{},
 	}
 }

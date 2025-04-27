@@ -39,7 +39,8 @@ func (v *Vault) LoadAllFiles() {
 				return
 			}
 			isNote := f.Ext == ".md"
-			obsidianFile := createObsidianFile(f.Name, f.Path, isNote)
+			isTagTemplate := filepath.Dir(f.Path) == v.TagsDirPath
+			obsidianFile := createObsidianFile(f.Name, f.Path, isNote, isTagTemplate)
 
 			//read Frontmatter
 			wgAfterRead.Add(1)

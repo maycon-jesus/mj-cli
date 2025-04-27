@@ -7,7 +7,8 @@ import (
 
 var Obsidian = &cobra.Command{
 	Use:              "obsidian",
-	Short:            "Obsidian",
+	Short:            "Utilitários para o obsidian",
+	Aliases:          []string{"ob"},
 	TraverseChildren: true,
 }
 

@@ -12,5 +12,7 @@ func NormalizePath(globalPath string, path string) (string, error) {
 	if !filepath.IsAbs(path) {
 		path = filepath.Join(globalPath, path)
 	}
+	path = filepath.Clean(path)
+
 	return path, nil
 }
