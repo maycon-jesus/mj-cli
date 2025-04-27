@@ -44,12 +44,13 @@ func analyzeFile(ch chan<- []string, wg *sync.WaitGroup, vault *obsidian.Vault, 
 	}
 
 	for _, tag := range values {
-		if tag == "mova-task" {
-			messages = obsidian.TagsRules["mova-task"].ApplyRules(file)
-			if len(messages) > 0 {
-				file.WriteFile()
-			}
+		tagRule, ok := obsidian.TagsRules[tag]
+		if !ok {
 			continue
+		}
+		messages = tagRule.ApplyRules(file)
+		if len(messages) > 0 {
+			file.WriteFile()
 		}
 	}
 
