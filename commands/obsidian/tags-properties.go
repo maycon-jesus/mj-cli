@@ -8,14 +8,13 @@ import (
 	"github.com/spf13/viper"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 )
 
 var TagsProperties = &cobra.Command{
-	Use:     "tags-properties",
-	Short:   "tags-properties short",
-	Aliases: []string{"format-tags"},
+	Use:     "format-tags",
+	Short:   "Format all file bases on tags templates",
+	Aliases: []string{"tags-properties"},
 	Run:     run,
 }
 
@@ -43,39 +42,15 @@ func analyzeFile(ch chan<- []string, wg *sync.WaitGroup, vault *obsidian.Vault, 
 	if !ok {
 		return
 	}
-	fileUpdated := false
 
 	for _, tag := range values {
-		tagTemplateNote, ok := vault.GetTagTemplateNote(tag)
-		if !ok {
+		if tag == "mova-task" {
+			messages = obsidian.TagsRules["mova-task"].ApplyRules(file)
+			if len(messages) > 0 {
+				file.WriteFile()
+			}
 			continue
 		}
-
-		for tagTemplateKey, tagTemplateValue := range tagTemplateNote.Frontmatter {
-			if strings.HasPrefix(tagTemplateKey, "metadata.") {
-				continue
-			}
-
-			_, ok = file.GetProperty(tagTemplateKey)
-			if !ok {
-				file.AddProperty(tagTemplateKey, tagTemplateValue.GetValues())
-				fileUpdated = true
-				message := fmt.Sprintf("A propriedade %s foi adicionada", tagTemplateKey)
-				messages = append(messages, message)
-			}
-			propertyValue, _ := file.GetProperty(tagTemplateKey)
-
-			//	required
-			propertyMetaRequired := fmt.Sprintf("metadata.%s.required", tagTemplateKey)
-			propertyRequired, ok := tagTemplateNote.GetProperty(propertyMetaRequired)
-			if ok && propertyRequired.GetValues()[0] == "true" && len(propertyValue.GetValues()) == 0 {
-				message := fmt.Sprintf("A propriedade %s é obrigatória", tagTemplateKey)
-				messages = append(messages, message)
-			}
-		}
-	}
-	if fileUpdated {
-		file.WriteFile()
 	}
 
 	if len(messages) > 0 {
