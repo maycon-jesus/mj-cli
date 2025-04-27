@@ -3,7 +3,9 @@ package obsidian
 import (
 	"fmt"
 	"github.com/maycon-jesus/mj-cli/utils/myIo"
+	"maps"
 	"os"
+	"slices"
 	"strings"
 )
 
@@ -117,7 +119,8 @@ func (f *ObsidianFile) WriteFile() {
 	if len(f.Frontmatter) > 0 {
 		fileLines = append(fileLines, "---")
 	}
-	for k, v := range f.Frontmatter {
+	for _, k := range slices.Sorted(maps.Keys(f.Frontmatter)) {
+		v := f.Frontmatter[k]
 		valuesLen := len(v.values)
 		if valuesLen == 0 {
 			fileLines = append(fileLines, fmt.Sprintf("%s:", k))
