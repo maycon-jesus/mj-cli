@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/maycon-jesus/mj-cli/utils"
 	"github.com/maycon-jesus/mj-cli/utils/obsidian"
+	"github.com/maycon-jesus/mj-cli/utils/obsidian/tagRuler"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"os"
@@ -44,7 +45,7 @@ func analyzeFile(ch chan<- []string, wg *sync.WaitGroup, vault *obsidian.Vault, 
 	}
 
 	for _, tag := range values {
-		tagRule, ok := obsidian.TagsRules[tag]
+		tagRule, ok := tagRuler.TagsRules[tag]
 		if !ok {
 			continue
 		}
