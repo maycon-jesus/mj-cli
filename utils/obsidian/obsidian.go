@@ -13,7 +13,6 @@ type Vault struct {
 	Notes       []*ObsidianFile
 	Path        string
 	TagsDirPath string
-	Tag
 }
 
 func NewVault(path string, tagsDirPath string) *Vault {
