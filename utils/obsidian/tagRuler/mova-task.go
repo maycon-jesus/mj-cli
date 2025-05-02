@@ -1,16 +1,8 @@
 package tagRuler
 
-import "github.com/maycon-jesus/mj-cli/utils/obsidian"
-
 var TagRuleMovaTask = TagRule{
 	TagName: "mova-task",
-	ApplyRules: func(note *obsidian.ObsidianFile) []string {
-		manipulator := FrontmatterManipulator{
-			ChMsgs: make(chan []string, 128),
-			Note:   note,
-		}
-		messages := make([]string, 0)
-
+	CheckRules: func(manipulator *FrontmatterManipulator) {
 		manipulator.AddPropertyIfNotExist("title", []string{})
 		manipulator.AddPropertyIfNotExist("created_at", []string{})
 		manipulator.AddPropertyIfNotExist("started_at", []string{})
@@ -25,7 +17,7 @@ var TagRuleMovaTask = TagRule{
 
 		manipulator.EnumChecker("status", []string{"created", "doing", "done"})
 
-		if v, _ := note.GetPropertyValues("status"); len(v) > 0 {
+		if v, _ := manipulator.Note.GetPropertyValues("status"); len(v) > 0 {
 			status := v[0]
 			switch status {
 			case "doing":
@@ -36,12 +28,5 @@ var TagRuleMovaTask = TagRule{
 			}
 
 		}
-
-		close(manipulator.ChMsgs)
-		for message := range manipulator.ChMsgs {
-			messages = append(messages, message...)
-		}
-
-		return messages
 	},
 }

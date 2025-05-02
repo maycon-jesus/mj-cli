@@ -6,7 +6,6 @@ import (
 	"github.com/maycon-jesus/mj-cli/utils/obsidian"
 	"github.com/maycon-jesus/mj-cli/utils/obsidian/tagRuler"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"os"
 	"path/filepath"
 	"sync"
@@ -20,14 +19,6 @@ var TagsProperties = &cobra.Command{
 }
 
 func GetCommandTagsProperties() *cobra.Command {
-	TagsProperties.Flags().StringP("templates-dir", "t", "", "tags templates directory")
-
-	if val := viper.GetString("obsidianTagsDir"); val != "" {
-		TagsProperties.Flags().Lookup("templates-dir").Value.Set(val)
-	} else {
-		TagsProperties.MarkFlagRequired("templates-dir")
-	}
-
 	return TagsProperties
 }
 
@@ -63,13 +54,11 @@ func analyzeFile(ch chan<- []string, wg *sync.WaitGroup, vault *obsidian.Vault, 
 
 func run(cmd *cobra.Command, args []string) {
 	vaultDir, _ := cmd.Flags().GetString("vault-dir")
-	templatesDir, _ := cmd.Flags().GetString("templates-dir")
 
 	wdDir, _ := os.Getwd()
 	vaultDirAbs, _ := utils.NormalizePath(wdDir, vaultDir)
-	templatesDirAbs, _ := utils.NormalizePath(vaultDirAbs, templatesDir)
 
-	vault := obsidian.NewVault(vaultDirAbs, templatesDirAbs)
+	vault := obsidian.NewVault(vaultDirAbs)
 	vault.LoadAllFiles()
 
 	waitAnalyzeFiles := &sync.WaitGroup{}

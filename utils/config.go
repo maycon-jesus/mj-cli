@@ -18,9 +18,6 @@ var AllConfigs = map[string]ConfigValue{
 	"obsidianVaultDir": {
 		Description: "Directory default of obsidian vault",
 	},
-	"obsidianTagsDir": {
-		Description: "Directory default of tags template on obsidian",
-	},
 }
 
 func LoadViper() {

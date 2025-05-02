@@ -12,6 +12,16 @@ type FrontmatterManipulator struct {
 	Note   *obsidian.ObsidianFile
 }
 
+func (m *FrontmatterManipulator) ReadAllMessagesInChannel() []string {
+	storeMessages := make([]string, 0)
+	for message := range m.ChMsgs {
+		for _, msg := range message {
+			storeMessages = append(storeMessages, msg)
+		}
+	}
+	return storeMessages
+}
+
 func (m *FrontmatterManipulator) AddPropertyIfNotExist(propertyName string, propertyValues []string) {
 	messages := make([]string, 0)
 	defer func() {
@@ -60,12 +70,31 @@ func (m *FrontmatterManipulator) IsFilled(propertyName string) {
 	}
 }
 
+func NewFrontmatterManipulator(note *obsidian.ObsidianFile) *FrontmatterManipulator {
+	return &FrontmatterManipulator{
+		ChMsgs: make(chan []string, 128),
+		Note:   note,
+	}
+}
+
 type TagRule struct {
 	TagName    string
-	ApplyRules func(note *obsidian.ObsidianFile) []string
+	CheckRules func(manipulator *FrontmatterManipulator)
+}
+
+func (t TagRule) ApplyRules(note *obsidian.ObsidianFile) []string {
+	manipulator := NewFrontmatterManipulator(note)
+	t.CheckRules(manipulator)
+	close(manipulator.ChMsgs)
+
+	messages := manipulator.ReadAllMessagesInChannel()
+
+	return messages
 }
 
 var TagsRules = map[string]TagRule{
-	"mova-task": TagRuleMovaTask,
-	"book":      TagRuleBook,
+	"mova-task":   TagRuleMovaTask,
+	"book":        TagRuleBook,
+	"aula/nota":   TagRuleAulaNota,
+	"aula/tarefa": TagRuleAulaTarefa,
 }

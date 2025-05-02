@@ -9,19 +9,16 @@ import (
 )
 
 type Vault struct {
-	Files       []*ObsidianFile
-	Notes       []*ObsidianFile
-	Path        string
-	TagsDirPath string
+	Files []*ObsidianFile
+	Notes []*ObsidianFile
+	Path  string
 }
 
-func NewVault(path string, tagsDirPath string) *Vault {
+func NewVault(path string) *Vault {
 	wd, _ := os.Getwd()
 	path, _ = utils.NormalizePath(wd, path)
-	tagsDirPath, _ = utils.NormalizePath(path, tagsDirPath)
 	return &Vault{
-		Path:        path,
-		TagsDirPath: tagsDirPath,
+		Path: path,
 	}
 }
 
@@ -38,8 +35,7 @@ func (v *Vault) LoadAllFiles() {
 				return
 			}
 			isNote := f.Ext == ".md"
-			isTagTemplate := filepath.Dir(f.Path) == v.TagsDirPath
-			obsidianFile := createObsidianFile(f.Name, f.Path, isNote, isTagTemplate)
+			obsidianFile := createObsidianFile(f.Name, f.Path, isNote)
 
 			//read Frontmatter
 			wgAfterRead.Add(1)
@@ -87,16 +83,4 @@ func (v *Vault) GetDirectoryNotes(path string) []*ObsidianFile {
 	}
 
 	return notes
-}
-
-func (v *Vault) GetTagTemplateNote(tag string) (*ObsidianFile, bool) {
-	path := filepath.Join(v.TagsDirPath, tag+".md")
-
-	for _, note := range v.Notes {
-		if note.Path == path {
-			return note, true
-		}
-	}
-
-	return nil, false
 }

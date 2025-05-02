@@ -8,9 +8,10 @@ import (
 )
 
 type File struct {
-	Name string
-	Path string
-	Ext  string
+	Name    string
+	Path    string
+	Ext     string
+	ModTime int64
 }
 
 func ListAllFiles(absPath string) []*File {
@@ -59,10 +60,12 @@ func readDirectoryFiles(ch chan<- File, wg *sync.WaitGroup, absPath string) {
 			//if filepath.Ext(entry.Name()) != ".md" {
 			//	continue
 			//}
+			info, _ := entry.Info()
 			f := File{
-				Path: filepath.Join(absPath, entry.Name()),
-				Name: entry.Name(),
-				Ext:  filepath.Ext(entry.Name()),
+				Path:    filepath.Join(absPath, entry.Name()),
+				Name:    entry.Name(),
+				Ext:     filepath.Ext(entry.Name()),
+				ModTime: info.ModTime().Unix(),
 			}
 
 			ch <- f
