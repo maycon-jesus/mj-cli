@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"log"
 	"os"
-	"strings"
 )
 
 func readFile(ch chan<- string, path string) {
@@ -25,7 +24,7 @@ func readFile(ch chan<- string, path string) {
 
 	for scanner.Scan() {
 		lineNumber++
-		text := strings.TrimSpace(scanner.Text())
+		text := scanner.Text()
 		ch <- text
 	}
 

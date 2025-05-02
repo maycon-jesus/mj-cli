@@ -15,6 +15,10 @@ var TagRuleMovaTask = TagRule{
 		manipulator.IsFilled("created_at")
 		manipulator.IsFilled("status")
 
+		//Inline
+		manipulator.InlineAddPropertyIfNotExist("title", []string{manipulator.Note.Name})
+		manipulator.InlineIsFilled("card_url")
+
 		manipulator.EnumChecker("status", []string{"created", "doing", "done"})
 
 		if v, _ := manipulator.Note.GetPropertyValues("status"); len(v) > 0 {

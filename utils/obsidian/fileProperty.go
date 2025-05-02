@@ -1,27 +1,27 @@
 package obsidian
 
 type FileProperty struct {
-	values []string
+	Values []string `json:"Values"`
 }
 
 type FilePropertyName = string
 type FilePropertiesMap = map[FilePropertyName]*FileProperty
 
-// GetValues returns a slice of strings representing the values stored in the FileProperty instance.
+// GetValues returns a slice of strings representing the Values stored in the FileProperty instance.
 func (f FileProperty) GetValues() []string {
-	return f.values
+	return f.Values
 }
 
-// SetValues assigns the provided slice of strings to the values field of the FileProperty instance.
+// SetValues assigns the provided slice of strings to the Values field of the FileProperty instance.
 func (f *FileProperty) SetValues(values []string) {
-	f.values = values
+	f.Values = values
 	return
 }
 
-// AddValues appends one or more string values to the values field of the FileProperty instance.
+// AddValues appends one or more string Values to the Values field of the FileProperty instance.
 func (f *FileProperty) AddValues(values ...string) {
 	for _, value := range values {
-		f.values = append(f.values, value)
+		f.Values = append(f.Values, value)
 	}
 	return
 }

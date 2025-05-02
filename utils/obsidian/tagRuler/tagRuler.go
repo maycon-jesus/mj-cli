@@ -10,6 +10,7 @@ import (
 type FrontmatterManipulator struct {
 	ChMsgs chan []string
 	Note   *obsidian.ObsidianFile
+	Tag    string
 }
 
 func (m *FrontmatterManipulator) ReadAllMessagesInChannel() []string {
@@ -34,6 +35,20 @@ func (m *FrontmatterManipulator) AddPropertyIfNotExist(propertyName string, prop
 	}
 	m.Note.AddProperty(propertyName, propertyValues)
 	messages = append(messages, fmt.Sprintf("Adicionada propriedade %s", propertyName))
+}
+
+func (m *FrontmatterManipulator) InlineAddPropertyIfNotExist(propertyName string, propertyValues []string) {
+	messages := make([]string, 0)
+	defer func() {
+		m.ChMsgs <- messages
+	}()
+
+	property := m.Note.InlineProperties.GetProperty(m.Tag, propertyName)
+	if property != nil {
+		return
+	}
+	m.Note.InlineProperties.AddProperty(m.Tag, propertyName, propertyValues)
+	messages = append(messages, fmt.Sprintf("Adicionada propriedade %s.%s", m.Tag, propertyName))
 }
 
 func (m *FrontmatterManipulator) EnumChecker(propertyName string, expectedEnum []string) {
@@ -70,10 +85,29 @@ func (m *FrontmatterManipulator) IsFilled(propertyName string) {
 	}
 }
 
+func (m *FrontmatterManipulator) InlineIsFilled(propertyName string) {
+	messages := make([]string, 0)
+	defer func() {
+		m.ChMsgs <- messages
+	}()
+
+	property := m.Note.InlineProperties.GetProperty(m.Tag, propertyName)
+	if property == nil {
+		message := fmt.Sprintf("A propriedade %s.%s precisa estar preenchida", m.Tag, propertyName)
+		messages = append(messages, message)
+		return
+	}
+	if len(property.Values) == 0 {
+		message := fmt.Sprintf("A propriedade %s.%s precisa estar preenchida", m.Tag, propertyName)
+		messages = append(messages, message)
+	}
+}
+
 func NewFrontmatterManipulator(note *obsidian.ObsidianFile) *FrontmatterManipulator {
 	return &FrontmatterManipulator{
 		ChMsgs: make(chan []string, 128),
 		Note:   note,
+		Tag:    "mova-task",
 	}
 }
 
