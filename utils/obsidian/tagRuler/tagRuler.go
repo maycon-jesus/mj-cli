@@ -3,6 +3,7 @@ package tagRuler
 import (
 	"fmt"
 	"github.com/maycon-jesus/mj-cli/utils/obsidian"
+	"regexp"
 	"slices"
 	"strings"
 )
@@ -49,6 +50,7 @@ func (m *FrontmatterManipulator) InlineAddPropertyIfNotExist(propertyName string
 	}
 	m.Note.InlineProperties.AddProperty(m.Tag, propertyName, propertyValues)
 	messages = append(messages, fmt.Sprintf("Adicionada propriedade %s.%s", m.Tag, propertyName))
+	m.Note.SetModified(true)
 }
 
 func (m *FrontmatterManipulator) EnumChecker(propertyName string, expectedEnum []string) {
@@ -62,6 +64,24 @@ func (m *FrontmatterManipulator) EnumChecker(propertyName string, expectedEnum [
 		return
 	}
 	for i, value := range property.GetValues() {
+		if !slices.Contains(expectedEnum, value) {
+			message := fmt.Sprintf("O valor %d da propriedade %s está fora do enum: %s", i, propertyName, strings.Join(expectedEnum, " | "))
+			messages = append(messages, message)
+		}
+	}
+}
+
+func (m *FrontmatterManipulator) InlineEnumChecker(propertyName string, expectedEnum []string) {
+	messages := make([]string, 0)
+	defer func() {
+		m.ChMsgs <- messages
+	}()
+
+	property := m.Note.InlineProperties.GetProperty(m.Tag, propertyName)
+	if property == nil {
+		return
+	}
+	for i, value := range property.Values {
 		if !slices.Contains(expectedEnum, value) {
 			message := fmt.Sprintf("O valor %d da propriedade %s está fora do enum: %s", i, propertyName, strings.Join(expectedEnum, " | "))
 			messages = append(messages, message)
@@ -100,6 +120,46 @@ func (m *FrontmatterManipulator) InlineIsFilled(propertyName string) {
 	if len(property.Values) == 0 {
 		message := fmt.Sprintf("A propriedade %s.%s precisa estar preenchida", m.Tag, propertyName)
 		messages = append(messages, message)
+	}
+}
+
+func (m *FrontmatterManipulator) InlineIsDate(propertyName string) {
+	messages := make([]string, 0)
+	defer func() {
+		m.ChMsgs <- messages
+	}()
+
+	regexDate := "^\\d\\d-\\d\\d-\\d\\d\\d\\d$"
+
+	property := m.Note.InlineProperties.GetProperty(m.Tag, propertyName)
+	if property == nil {
+		return
+	}
+	for _, value := range property.Values {
+		if !regexp.MustCompile(regexDate).MatchString(value) {
+			message := fmt.Sprintf("A propriedade %s.%s precisa ser uma data no formato: dd-mm-yyyy", m.Tag, propertyName)
+			messages = append(messages, message)
+		}
+	}
+}
+
+func (m *FrontmatterManipulator) InlineIsURI(propertyName string) {
+	messages := make([]string, 0)
+	defer func() {
+		m.ChMsgs <- messages
+	}()
+
+	regexUri := "^((\\w+:\\/\\/)[-a-zA-Z0-9:@;?&=\\/%\\+\\.\\*!'\\(\\),\\$_\\{\\}\\^~\\[\\]`#|]+)$"
+
+	property := m.Note.InlineProperties.GetProperty(m.Tag, propertyName)
+	if property == nil {
+		return
+	}
+	for _, value := range property.Values {
+		if !regexp.MustCompile(regexUri).MatchString(value) {
+			message := fmt.Sprintf("A propriedade %s.%s precisa ser uma URI válida", m.Tag, propertyName)
+			messages = append(messages, message)
+		}
 	}
 }
 

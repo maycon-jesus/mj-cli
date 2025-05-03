@@ -3,34 +3,36 @@ package tagRuler
 var TagRuleMovaTask = TagRule{
 	TagName: "mova-task",
 	CheckRules: func(manipulator *FrontmatterManipulator) {
-		manipulator.AddPropertyIfNotExist("title", []string{})
-		manipulator.AddPropertyIfNotExist("created_at", []string{})
-		manipulator.AddPropertyIfNotExist("started_at", []string{})
-		manipulator.AddPropertyIfNotExist("finished_at", []string{})
-		manipulator.AddPropertyIfNotExist("card_url", []string{})
-		manipulator.AddPropertyIfNotExist("doc_url", []string{})
-		manipulator.AddPropertyIfNotExist("status", []string{})
-
-		manipulator.IsFilled("title")
-		manipulator.IsFilled("created_at")
-		manipulator.IsFilled("status")
-
 		//Inline
 		manipulator.InlineAddPropertyIfNotExist("title", []string{manipulator.Note.Name})
-		manipulator.InlineIsFilled("card_url")
+		manipulator.InlineAddPropertyIfNotExist("created_at", []string{})
+		manipulator.InlineAddPropertyIfNotExist("started_at", []string{})
+		manipulator.InlineAddPropertyIfNotExist("finished_at", []string{})
+		manipulator.InlineAddPropertyIfNotExist("card_url", []string{})
+		manipulator.InlineAddPropertyIfNotExist("doc_url", []string{})
+		manipulator.InlineAddPropertyIfNotExist("status", []string{})
 
-		manipulator.EnumChecker("status", []string{"created", "doing", "done"})
+		manipulator.InlineIsFilled("title")
+		manipulator.InlineIsFilled("created_at")
+		manipulator.InlineIsFilled("status")
 
-		if v, _ := manipulator.Note.GetPropertyValues("status"); len(v) > 0 {
-			status := v[0]
-			switch status {
+		manipulator.InlineEnumChecker("status", []string{"created", "doing", "done"})
+
+		manipulator.InlineIsDate("created_at")
+		manipulator.InlineIsDate("started_at")
+		manipulator.InlineIsDate("finished_at")
+
+		manipulator.InlineIsURI("card_url")
+		manipulator.InlineIsURI("doc_url")
+
+		if status := manipulator.Note.InlineProperties.GetProperty(manipulator.Tag, "status"); status != nil && len(status.Values) > 0 {
+			switch status.Values[0] {
 			case "doing":
-				manipulator.IsFilled("started_at")
+				manipulator.InlineIsFilled("started_at")
 			case "done":
-				manipulator.IsFilled("started_at")
-				manipulator.IsFilled("finished_at")
+				manipulator.InlineIsFilled("started_at")
+				manipulator.InlineIsFilled("finished_at")
 			}
-
 		}
 	},
 }

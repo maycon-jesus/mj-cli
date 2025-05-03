@@ -18,6 +18,8 @@ type ObsidianFile struct {
 	Frontmatter              FilePropertiesMap `json:"Frontmatter"`
 	InlineProperties         *InlineProperties `json:"InlineProperties"`
 	HasBlockInlineProperties bool              `json:"HasBlockInlineProperties"`
+	ModTime                  int64             `json:"ModTime"`
+	Modified                 bool              `json:"Modified"`
 }
 
 func (f *ObsidianFile) GetProperty(key string) (Frontmatter *FileProperty, ok bool) {
@@ -41,6 +43,7 @@ func (f *ObsidianFile) AddProperty(key FilePropertyName, values []string) {
 	} else {
 		frontmatter := &FileProperty{}
 		frontmatter.AddValues(values...)
+		frontmatter.Key = key
 
 		f.Frontmatter[key] = frontmatter
 	}
@@ -160,7 +163,7 @@ func (f *ObsidianFile) ReadFrontmatter() *ObsidianFile {
 }
 
 func (f *ObsidianFile) WriteFile() {
-	if !f.IsNote {
+	if !f.IsNote || !f.Modified {
 		return
 	}
 
@@ -226,13 +229,25 @@ func (f *ObsidianFile) WriteFile() {
 	}
 
 	err := os.WriteFile(f.Path, []byte(strings.Join(fileLines, "\n")), 0644)
+
 	if err != nil {
 		panic(err)
 	}
 
+	info, err := os.Stat(f.Path)
+	if err != nil {
+		panic(err)
+	}
+	f.ModTime = info.ModTime().Unix()
+	f.SetModified(false)
+
 }
 
-func createObsidianFile(Name string, Path string, IsNote bool) *ObsidianFile {
+func (f *ObsidianFile) SetModified(modified bool) {
+	f.Modified = modified
+}
+
+func createObsidianFile(Name string, Path string, IsNote bool, modTime int64) *ObsidianFile {
 	return &ObsidianFile{
 		Name:                     Name,
 		Path:                     Path,
@@ -240,5 +255,6 @@ func createObsidianFile(Name string, Path string, IsNote bool) *ObsidianFile {
 		Frontmatter:              FilePropertiesMap{},
 		HasBlockInlineProperties: false,
 		InlineProperties:         CreateInlineProperties(),
+		ModTime:                  modTime,
 	}
 }
