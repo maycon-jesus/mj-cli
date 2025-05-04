@@ -1,16 +1,15 @@
 package tagRuler
 
 var TagRuleAulaNota = TagRule{
-	TagName: "book",
+	TagName: "aula-nota",
 	CheckRules: func(manipulator *FrontmatterManipulator) {
-		manipulator.AddPropertyIfNotExist("title", []string{})
-		manipulator.AddPropertyIfNotExist("disciplina", []string{})
-		manipulator.AddPropertyIfNotExist("professor", []string{})
-		manipulator.AddPropertyIfNotExist("date", []string{})
+		TagRuleDefault.CheckRules(manipulator)
+		TagRuleAula.CheckRules(manipulator)
 
-		manipulator.IsFilled("title")
-		manipulator.IsFilled("disciplina")
-		manipulator.IsFilled("professor")
-		manipulator.IsFilled("date")
+		date := manipulator.GenPropertyId("date")
+
+		manipulator.AddPropertyIfNotExist(date, []string{})
+
+		manipulator.IsFilled(date)
 	},
 }

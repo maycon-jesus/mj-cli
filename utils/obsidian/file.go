@@ -1,25 +1,21 @@
 package obsidian
 
 import (
-	"errors"
 	"fmt"
 	"github.com/maycon-jesus/mj-cli/utils/myIo"
 	"maps"
 	"os"
 	"slices"
 	"strings"
-	"unicode"
 )
 
 type ObsidianFile struct {
-	Name                     string            `json:"Name"`
-	Path                     string            `json:"Path"`
-	IsNote                   bool              `json:"IsNote"`
-	Frontmatter              FilePropertiesMap `json:"Frontmatter"`
-	InlineProperties         *InlineProperties `json:"InlineProperties"`
-	HasBlockInlineProperties bool              `json:"HasBlockInlineProperties"`
-	ModTime                  int64             `json:"ModTime"`
-	Modified                 bool              `json:"Modified"`
+	Name        string            `json:"Name"`
+	Path        string            `json:"Path"`
+	IsNote      bool              `json:"IsNote"`
+	Frontmatter FilePropertiesMap `json:"Frontmatter"`
+	ModTime     int64             `json:"ModTime"`
+	Modified    bool              `json:"Modified"`
 }
 
 func (f *ObsidianFile) GetProperty(key string) (Frontmatter *FileProperty, ok bool) {
@@ -63,12 +59,6 @@ func (f *ObsidianFile) ReadFrontmatter() *ObsidianFile {
 	lastKey := ""
 	lastKeyValues := make([]string, 0)
 
-	//inline-frontmatter variables temp
-	inlineFrontmatterCount := 0
-	inlineFrontmatterTag := ""
-	inlineFrontmatterName := ""
-	inlineFrontmatterValues := make([]string, 0)
-
 	for text := range ch {
 		lineNumber++
 
@@ -82,23 +72,6 @@ func (f *ObsidianFile) ReadFrontmatter() *ObsidianFile {
 				f.AddProperty(lastKey, lastKeyValues)
 			}
 			currentToken = ""
-			continue
-		}
-		if currentToken == "" && text == "%% start inline-frontmatter %%" {
-			currentToken = "inline-frontmatter"
-			inlineFrontmatterCount++
-			f.HasBlockInlineProperties = true
-
-			if inlineFrontmatterCount > 1 {
-				panic(errors.New(fmt.Sprintf("O arquivo \"%s\" possui mais de um bloco inline-frontmatter", f.Path)))
-			}
-			continue
-		}
-		if currentToken == "inline-frontmatter" && text == "%% end inline-frontmatter %%" {
-			currentToken = ""
-			if inlineFrontmatterTag != "" && inlineFrontmatterName != "" {
-				f.InlineProperties.AddProperty(inlineFrontmatterTag, inlineFrontmatterName, inlineFrontmatterValues)
-			}
 			continue
 		}
 
@@ -126,34 +99,6 @@ func (f *ObsidianFile) ReadFrontmatter() *ObsidianFile {
 				}
 			} else {
 				lastKeyValues = append(lastKeyValues, strings.ReplaceAll(text, "- ", ""))
-			}
-		case "inline-frontmatter":
-			if text == "" {
-				continue
-			}
-
-			text = strings.TrimRightFunc(text, unicode.IsSpace)
-			tabsCount := strings.Count(text, "\t")
-			text = strings.TrimSpace(text)
-			text = strings.Replace(text, "- ", "", 1)
-
-			switch tabsCount {
-			case 0:
-				inlineFrontmatterTag = text
-			case 1:
-				if inlineFrontmatterName != "" {
-					f.InlineProperties.AddProperty(inlineFrontmatterTag, inlineFrontmatterName, inlineFrontmatterValues)
-					inlineFrontmatterValues = make([]string, 0)
-				}
-
-				lineSplit := strings.SplitN(text, ":", 2)
-				inlineFrontmatterName = lineSplit[0]
-				if lineSplit[1] == "" {
-					break
-				}
-				inlineFrontmatterValues = append(inlineFrontmatterValues, strings.TrimSpace(lineSplit[1]))
-			case 2:
-				inlineFrontmatterValues = append(inlineFrontmatterValues, text)
 			}
 		}
 
@@ -194,12 +139,6 @@ func (f *ObsidianFile) WriteFile() {
 		fileLines = append(fileLines, "---")
 	}
 
-	if !f.HasBlockInlineProperties {
-		fileLines = append(fileLines, f.InlineProperties.ToLinesArr()...)
-	}
-
-	ignoreLines := false
-
 	for text := range ch {
 		lineCounter++
 		if lineCounter == 1 && text == "---" {
@@ -214,18 +153,8 @@ func (f *ObsidianFile) WriteFile() {
 			continue
 		}
 
-		if text == "%% start inline-frontmatter %%" {
-			ignoreLines = true
-			continue
-		}
-		if text == "%% end inline-frontmatter %%" {
-			ignoreLines = false
-			fileLines = append(fileLines, f.InlineProperties.ToLinesArr()...)
-			continue
-		}
-		if !ignoreLines {
-			fileLines = append(fileLines, text)
-		}
+		fileLines = append(fileLines, text)
+
 	}
 
 	err := os.WriteFile(f.Path, []byte(strings.Join(fileLines, "\n")), 0644)
@@ -249,12 +178,10 @@ func (f *ObsidianFile) SetModified(modified bool) {
 
 func createObsidianFile(Name string, Path string, IsNote bool, modTime int64) *ObsidianFile {
 	return &ObsidianFile{
-		Name:                     Name,
-		Path:                     Path,
-		IsNote:                   IsNote,
-		Frontmatter:              FilePropertiesMap{},
-		HasBlockInlineProperties: false,
-		InlineProperties:         CreateInlineProperties(),
-		ModTime:                  modTime,
+		Name:        Name,
+		Path:        Path,
+		IsNote:      IsNote,
+		Frontmatter: FilePropertiesMap{},
+		ModTime:     modTime,
 	}
 }

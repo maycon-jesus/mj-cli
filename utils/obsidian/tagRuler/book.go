@@ -3,13 +3,13 @@ package tagRuler
 var TagRuleBook = TagRule{
 	TagName: "book",
 	CheckRules: func(manipulator *FrontmatterManipulator) {
-		manipulator.AddPropertyIfNotExist("title", []string{})
+		TagRuleDefault.CheckRules(manipulator)
+
 		manipulator.AddPropertyIfNotExist("author", []string{})
 		manipulator.AddPropertyIfNotExist("started_at", []string{})
 		manipulator.AddPropertyIfNotExist("finished_at", []string{})
 		manipulator.AddPropertyIfNotExist("status", []string{})
 
-		manipulator.IsFilled("title")
 		manipulator.IsFilled("author")
 		manipulator.IsFilled("status")
 

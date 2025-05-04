@@ -14,6 +14,10 @@ type FrontmatterManipulator struct {
 	Tag    string
 }
 
+func (m *FrontmatterManipulator) GenPropertyId(propertyName string) string {
+	return fmt.Sprintf("%s.%s", m.Tag, propertyName)
+}
+
 func (m *FrontmatterManipulator) ReadAllMessagesInChannel() []string {
 	storeMessages := make([]string, 0)
 	for message := range m.ChMsgs {
@@ -36,20 +40,6 @@ func (m *FrontmatterManipulator) AddPropertyIfNotExist(propertyName string, prop
 	}
 	m.Note.AddProperty(propertyName, propertyValues)
 	messages = append(messages, fmt.Sprintf("Adicionada propriedade %s", propertyName))
-}
-
-func (m *FrontmatterManipulator) InlineAddPropertyIfNotExist(propertyName string, propertyValues []string) {
-	messages := make([]string, 0)
-	defer func() {
-		m.ChMsgs <- messages
-	}()
-
-	property := m.Note.InlineProperties.GetProperty(m.Tag, propertyName)
-	if property != nil {
-		return
-	}
-	m.Note.InlineProperties.AddProperty(m.Tag, propertyName, propertyValues)
-	messages = append(messages, fmt.Sprintf("Adicionada propriedade %s.%s", m.Tag, propertyName))
 	m.Note.SetModified(true)
 }
 
@@ -64,24 +54,6 @@ func (m *FrontmatterManipulator) EnumChecker(propertyName string, expectedEnum [
 		return
 	}
 	for i, value := range property.GetValues() {
-		if !slices.Contains(expectedEnum, value) {
-			message := fmt.Sprintf("O valor %d da propriedade %s está fora do enum: %s", i, propertyName, strings.Join(expectedEnum, " | "))
-			messages = append(messages, message)
-		}
-	}
-}
-
-func (m *FrontmatterManipulator) InlineEnumChecker(propertyName string, expectedEnum []string) {
-	messages := make([]string, 0)
-	defer func() {
-		m.ChMsgs <- messages
-	}()
-
-	property := m.Note.InlineProperties.GetProperty(m.Tag, propertyName)
-	if property == nil {
-		return
-	}
-	for i, value := range property.Values {
 		if !slices.Contains(expectedEnum, value) {
 			message := fmt.Sprintf("O valor %d da propriedade %s está fora do enum: %s", i, propertyName, strings.Join(expectedEnum, " | "))
 			messages = append(messages, message)
@@ -105,45 +77,27 @@ func (m *FrontmatterManipulator) IsFilled(propertyName string) {
 	}
 }
 
-func (m *FrontmatterManipulator) InlineIsFilled(propertyName string) {
-	messages := make([]string, 0)
-	defer func() {
-		m.ChMsgs <- messages
-	}()
+//func (m *FrontmatterManipulator) InlineIsDate(propertyName string) {
+//	messages := make([]string, 0)
+//	defer func() {
+//		m.ChMsgs <- messages
+//	}()
+//
+//	regexDate := "^\\d\\d-\\d\\d-\\d\\d\\d\\d$"
+//
+//	property := m.Note.InlineProperties.GetProperty(m.Tag, propertyName)
+//	if property == nil {
+//		return
+//	}
+//	for _, value := range property.Values {
+//		if !regexp.MustCompile(regexDate).MatchString(value) {
+//			message := fmt.Sprintf("A propriedade %s.%s precisa ser uma data no formato: dd-mm-yyyy", m.Tag, propertyName)
+//			messages = append(messages, message)
+//		}
+//	}
+//}
 
-	property := m.Note.InlineProperties.GetProperty(m.Tag, propertyName)
-	if property == nil {
-		message := fmt.Sprintf("A propriedade %s.%s precisa estar preenchida", m.Tag, propertyName)
-		messages = append(messages, message)
-		return
-	}
-	if len(property.Values) == 0 {
-		message := fmt.Sprintf("A propriedade %s.%s precisa estar preenchida", m.Tag, propertyName)
-		messages = append(messages, message)
-	}
-}
-
-func (m *FrontmatterManipulator) InlineIsDate(propertyName string) {
-	messages := make([]string, 0)
-	defer func() {
-		m.ChMsgs <- messages
-	}()
-
-	regexDate := "^\\d\\d-\\d\\d-\\d\\d\\d\\d$"
-
-	property := m.Note.InlineProperties.GetProperty(m.Tag, propertyName)
-	if property == nil {
-		return
-	}
-	for _, value := range property.Values {
-		if !regexp.MustCompile(regexDate).MatchString(value) {
-			message := fmt.Sprintf("A propriedade %s.%s precisa ser uma data no formato: dd-mm-yyyy", m.Tag, propertyName)
-			messages = append(messages, message)
-		}
-	}
-}
-
-func (m *FrontmatterManipulator) InlineIsURI(propertyName string) {
+func (m *FrontmatterManipulator) IsURI(propertyName string) {
 	messages := make([]string, 0)
 	defer func() {
 		m.ChMsgs <- messages
@@ -151,23 +105,23 @@ func (m *FrontmatterManipulator) InlineIsURI(propertyName string) {
 
 	regexUri := "^((\\w+:\\/\\/)[-a-zA-Z0-9:@;?&=\\/%\\+\\.\\*!'\\(\\),\\$_\\{\\}\\^~\\[\\]`#|]+)$"
 
-	property := m.Note.InlineProperties.GetProperty(m.Tag, propertyName)
+	property, _ := m.Note.GetProperty(propertyName)
 	if property == nil {
 		return
 	}
 	for _, value := range property.Values {
 		if !regexp.MustCompile(regexUri).MatchString(value) {
-			message := fmt.Sprintf("A propriedade %s.%s precisa ser uma URI válida", m.Tag, propertyName)
+			message := fmt.Sprintf("A propriedade %s precisa ser uma URI válida", propertyName)
 			messages = append(messages, message)
 		}
 	}
 }
 
-func NewFrontmatterManipulator(note *obsidian.ObsidianFile) *FrontmatterManipulator {
+func NewFrontmatterManipulator(tag string, note *obsidian.ObsidianFile) *FrontmatterManipulator {
 	return &FrontmatterManipulator{
 		ChMsgs: make(chan []string, 128),
 		Note:   note,
-		Tag:    "mova-task",
+		Tag:    tag,
 	}
 }
 
@@ -177,7 +131,7 @@ type TagRule struct {
 }
 
 func (t TagRule) ApplyRules(note *obsidian.ObsidianFile) []string {
-	manipulator := NewFrontmatterManipulator(note)
+	manipulator := NewFrontmatterManipulator(t.TagName, note)
 	t.CheckRules(manipulator)
 	close(manipulator.ChMsgs)
 
@@ -187,8 +141,11 @@ func (t TagRule) ApplyRules(note *obsidian.ObsidianFile) []string {
 }
 
 var TagsRules = map[string]TagRule{
-	"mova-task":   TagRuleMovaTask,
-	"book":        TagRuleBook,
-	"aula/nota":   TagRuleAulaNota,
-	"aula/tarefa": TagRuleAulaTarefa,
+	"mova-task":         TagRuleMovaTask,
+	"book":              TagRuleBook,
+	"aula":              TagRuleAula,
+	"aula-nota":         TagRuleAulaNota,
+	"aula-task":         TagRuleAulaTask,
+	"task":              TagRuleTask,
+	"culinaria-receita": TagRuleCulinariaReceita,
 }

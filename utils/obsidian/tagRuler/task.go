@@ -1,20 +1,27 @@
 package tagRuler
 
-var TagRuleMovaTask = TagRule{
-	TagName: "mova-task",
+var TagRuleTask = TagRule{
+	TagName: "task",
 	CheckRules: func(manipulator *FrontmatterManipulator) {
 		TagRuleDefault.CheckRules(manipulator)
-		TagRuleTask.CheckRules(manipulator)
 
 		//properties
-		cardUrl := "card_url"
-		docUrl := "doc_url"
+		createdAt := "created_at"
+		startedAt := "started_at"
+		finishedAt := "finished_at"
+		status := "status"
 
 		//Inline
-		manipulator.AddPropertyIfNotExist(cardUrl, []string{})
-		manipulator.AddPropertyIfNotExist(docUrl, []string{})
+		manipulator.AddPropertyIfNotExist(createdAt, []string{})
+		manipulator.AddPropertyIfNotExist(startedAt, []string{})
+		manipulator.AddPropertyIfNotExist(finishedAt, []string{})
+		manipulator.AddPropertyIfNotExist(status, []string{})
 
-		manipulator.IsURI(cardUrl)
+		manipulator.IsFilled(createdAt)
+		manipulator.IsFilled(status)
+
+		manipulator.EnumChecker(status, []string{"created", "doing", "done"})
+
 		//manipulator.InlineIsDate("created_at")
 		//manipulator.InlineIsDate("started_at")
 		//manipulator.InlineIsDate("finished_at")
