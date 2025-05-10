@@ -12,7 +12,6 @@ var Obsidian = &cobra.Command{
 	Short:            "Utilitários para o obsidian",
 	Aliases:          []string{"ob"},
 	PersistentPreRun: CommandObsidianValidadePersistentFlags,
-	TraverseChildren: true,
 }
 
 func CommandObsidianValidadePersistentFlags(cmd *cobra.Command, args []string) {
@@ -31,7 +30,7 @@ func CommandObsidianValidadePersistentFlags(cmd *cobra.Command, args []string) {
 
 func GetCommandObsidian() *cobra.Command {
 	Obsidian.AddCommand(GetCommandTagsProperties())
-	Obsidian.AddCommand(GetCommandWeek())
+	Obsidian.AddCommand(GetCommandWeekly())
 	Obsidian.AddCommand(GetCommandMonth())
 	Obsidian.AddCommand(GetCommandDaily())
 

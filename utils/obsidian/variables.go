@@ -18,7 +18,7 @@ func DateReplacer(str string, t time.Time) string {
 		match[1] = strings.ReplaceAll(match[1], "DD", "02")
 		match[1] = t.Format(match[1])
 
-		weekN := (t.YearDay() / 7) + 1
+		_, weekN := t.ISOWeek()
 		match[1] = strings.ReplaceAll(match[1], "w", fmt.Sprintf("%d", weekN))
 		str = strings.ReplaceAll(str, match[0], match[1])
 	}
