@@ -18,6 +18,11 @@ func main() {
 	//note.AddProperty("teste-escrita", []string{"aaa"}, obsidian.FilePropertyMetadata{})
 	//note.WriteFile()
 	rootCmd := commands.GetCommandRoot()
+	//err := doc.GenMarkdownTree(rootCmd, "./docs")
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
+
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)

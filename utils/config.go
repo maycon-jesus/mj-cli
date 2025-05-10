@@ -18,6 +18,35 @@ var AllConfigs = map[string]ConfigValue{
 	"obsidianVaultDir": {
 		Description: "Directory default of obsidian vault",
 	},
+	"obsidianBulletJournalDir": {
+		Description:  "Directory default of bullet journal on obsidian vault",
+		DefaultValue: "03 - Journal",
+	},
+	"obsidianBulletJournalMonthDir": {
+		Description:  "",
+		DefaultValue: "01 - Meses",
+	},
+	"obsidianBulletJournalWeeklyDir": {
+		Description:  "",
+		DefaultValue: "02 - Semanas",
+	},
+	"obsidianBulletJournalDailyDir": {
+		Description:  "",
+		DefaultValue: "03 - Diários",
+	},
+	"obsidianTemplatesDir": {
+		Description:  "",
+		DefaultValue: "99 - Meta/00 - Templates",
+	},
+	"obsidian-vault-dir": {
+		Description: "",
+	},
+	"obsidian-daily-template-path": {
+		Description: "",
+	},
+	"obsidian-daily-note-dir": {
+		Description: "",
+	},
 }
 
 func LoadViper() {
@@ -31,7 +60,7 @@ func LoadViper() {
 	}
 
 	for k, v := range AllConfigs {
-		if viper.Get(k) == "" {
+		if val := viper.Get(k); val == "" || val == nil {
 			viper.Set(k, v.DefaultValue)
 		}
 	}
