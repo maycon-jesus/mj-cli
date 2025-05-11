@@ -17,7 +17,7 @@ import (
 var WeeklyCommand = &cobra.Command{
 	Use:              "weekly",
 	Short:            "Generate Weekly Notes",
-	Aliases:          []string{"wk"},
+	Aliases:          []string{"wk", "week"},
 	TraverseChildren: true,
 	PreRun:           CommandWeeklyValidadeFlags,
 	Run:              runWeekly,
