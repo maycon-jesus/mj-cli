@@ -1,7 +1,6 @@
 package obsidian
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"github.com/maycon-jesus/mj-cli/utils"
@@ -10,20 +9,19 @@ import (
 	"github.com/spf13/cobra"
 	"os"
 	"path/filepath"
-	"strconv"
 	"time"
 )
 
-var WeeklyCommand = &cobra.Command{
-	Use:              "weekly",
-	Short:            "Generate Weekly Notes",
-	Aliases:          []string{"wk"},
+var MonthlyCommand = &cobra.Command{
+	Use:              "monthly",
+	Short:            "Generate Monthly Notes",
+	Aliases:          []string{"mo", "month"},
 	TraverseChildren: true,
-	PreRun:           CommandWeeklyValidadeFlags,
-	Run:              runWeekly,
+	PreRun:           CommandMonthlyValidadeFlags,
+	Run:              runMonthly,
 }
 
-func CommandWeeklyValidadeFlags(cmd *cobra.Command, args []string) {
+func CommandMonthlyValidadeFlags(cmd *cobra.Command, args []string) {
 	vaultDir, err := cmd.Flags().GetString("vault-dir")
 	cobra.CheckErr(err)
 
@@ -56,22 +54,23 @@ func CommandWeeklyValidadeFlags(cmd *cobra.Command, args []string) {
 	}
 }
 
-func GetCommandWeekly() *cobra.Command {
+func GetCommandMonthly() *cobra.Command {
 	todayDate := time.Now().Format("2006-01-02")
-	WeeklyCommand.Flags().String("date", todayDate, "Date in format YYYY-MM-DD. If not provided, today's date will be used.\n")
+	MonthlyCommand.Flags().String("date", todayDate, "Date in format YYYY-MM-DD. If not provided, today's date will be used.\n")
 
-	utils.CreateRequiredFlagWithViperConfig(WeeklyCommand, "template", "", "Template to use for the weekly note. If not provided, the default template will be used.", "obsidian-weekly-template-path")
-	utils.CreateFlagWithViperConfig(WeeklyCommand, "dir", "", "Directory to create the weekly note. If not provided, the current directory will be used.", "obsidian-weekly-note-dir")
-	WeeklyCommand.Flags().Int("quantity", 1, "Generate the next n weeks. If not provided, the current day will be used.")
-	return WeeklyCommand
+	utils.CreateRequiredFlagWithViperConfig(MonthlyCommand, "template", "", "Template to use for the monthly note. If not provided, the default template will be used.", "obsidian-monthly-template-path")
+	utils.CreateFlagWithViperConfig(MonthlyCommand, "dir", "", "Directory to create the monthly note. If not provided, the current directory will be used.", "obsidian-monthly-note-dir")
+	MonthlyCommand.Flags().Int("quantity", 1, "Generate the next n weeks. If not provided, the current day will be used.")
+	return MonthlyCommand
 }
 
-func createWeeklyFile(date time.Time, fileContent []byte, outputDir string) {
+func createMonthlyFile(date time.Time, fileContent []byte, outputDir string) {
 	fileContent = []byte(obsidian.DateReplacer(string(fileContent), date))
 
-	_, weekN := date.ISOWeek()
+	monthName := utils.GetMonthName(date.Month())
+	monthNum := fmt.Sprintf("%02d", date.Month())
 
-	outputPath := filepath.Join(outputDir, "Semana "+strconv.Itoa(weekN)+".md")
+	outputPath := filepath.Join(outputDir, monthNum+" - "+monthName+".md")
 
 	if myIo.FileExists(outputPath) {
 		cobra.CheckErr(errors.New("File already exists: " + outputPath))
@@ -84,7 +83,7 @@ func createWeeklyFile(date time.Time, fileContent []byte, outputDir string) {
 	cobra.CheckErr(err)
 }
 
-func runWeekly(cmd *cobra.Command, args []string) {
+func runMonthly(cmd *cobra.Command, args []string) {
 	date, _ := cmd.Flags().GetString("date")
 	dateTime, _ := time.Parse("2006-01-02", date)
 	templatePath, _ := cmd.Flags().GetString("template")
@@ -99,21 +98,9 @@ func runWeekly(cmd *cobra.Command, args []string) {
 		fileContent = content
 	}
 
-	correctionFactor := int(dateTime.Weekday()) * -1
-	dateTime = dateTime.AddDate(0, 0, correctionFactor)
-
 	for range nextDays {
 		resolvedOutputDir := obsidian.DateReplacer(outputDir, dateTime)
-		weeklyDates := ""
-		for i := 0; i < 7; i++ {
-			if i > 0 {
-				weeklyDates += " | "
-			}
-			weeklyDates += fmt.Sprintf("[[../03 - Diários/%s|%s]]", dateTime.Format("2006-01-02"), dateTime.Format("02/01"))
-			dateTime = dateTime.AddDate(0, 0, 1)
-		}
-
-		nFileContent := bytes.ReplaceAll(fileContent, []byte("{{WEEKLY_DATES}}"), []byte(weeklyDates))
-		createWeeklyFile(dateTime, nFileContent, resolvedOutputDir)
+		createMonthlyFile(dateTime, fileContent, resolvedOutputDir)
+		dateTime = dateTime.AddDate(0, 1, 0)
 	}
 }

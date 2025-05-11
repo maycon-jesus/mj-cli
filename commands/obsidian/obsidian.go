@@ -31,7 +31,7 @@ func CommandObsidianValidadePersistentFlags(cmd *cobra.Command, args []string) {
 func GetCommandObsidian() *cobra.Command {
 	Obsidian.AddCommand(GetCommandTagsProperties())
 	Obsidian.AddCommand(GetCommandWeekly())
-	Obsidian.AddCommand(GetCommandMonth())
+	Obsidian.AddCommand(GetCommandMonthly())
 	Obsidian.AddCommand(GetCommandDaily())
 
 	vaultDir := viper.GetString("obsidian-vault-dir")

@@ -53,6 +53,12 @@ var AllConfigs = map[string]ConfigValue{
 	"obsidian-weekly-note-dir": {
 		Description: "",
 	},
+	"obsidian-monthly-template-path": {
+		Description: "",
+	},
+	"obsidian-monthly-note-dir": {
+		Description: "",
+	},
 }
 
 func LoadViper() {
