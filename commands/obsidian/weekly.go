@@ -63,10 +63,12 @@ func GetCommandWeekly() *cobra.Command {
 	utils.CreateRequiredFlagWithViperConfig(WeeklyCommand, "template", "", "Template to use for the weekly note. If not provided, the default template will be used.", "obsidian-weekly-template-path")
 	utils.CreateFlagWithViperConfig(WeeklyCommand, "dir", "", "Directory to create the weekly note. If not provided, the current directory will be used.", "obsidian-weekly-note-dir")
 	WeeklyCommand.Flags().Int("quantity", 1, "Generate the next n weeks. If not provided, the current day will be used.")
+	WeeklyCommand.Flags().Bool("soft", false, "Not generate error if file exists.")
+
 	return WeeklyCommand
 }
 
-func createWeeklyFile(date time.Time, fileContent []byte, outputDir string) {
+func createWeeklyFile(soft bool, date time.Time, fileContent []byte, outputDir string) {
 	fileContent = []byte(obsidian.DateReplacer(string(fileContent), date))
 
 	_, weekN := date.ISOWeek()
@@ -74,6 +76,10 @@ func createWeeklyFile(date time.Time, fileContent []byte, outputDir string) {
 	outputPath := filepath.Join(outputDir, "Semana "+strconv.Itoa(weekN)+".md")
 
 	if myIo.FileExists(outputPath) {
+		if soft {
+			fmt.Println("File already exists: " + outputPath)
+			return
+		}
 		cobra.CheckErr(errors.New("File already exists: " + outputPath))
 	}
 
@@ -90,6 +96,7 @@ func runWeekly(cmd *cobra.Command, args []string) {
 	templatePath, _ := cmd.Flags().GetString("template")
 	outputDir, _ := cmd.Flags().GetString("dir")
 	nextDays, _ := cmd.Flags().GetInt("quantity")
+	soft, _ := cmd.Flags().GetBool("soft")
 
 	fileContent := []byte("")
 
@@ -114,6 +121,6 @@ func runWeekly(cmd *cobra.Command, args []string) {
 		}
 
 		nFileContent := bytes.ReplaceAll(fileContent, []byte("{{WEEKLY_DATES}}"), []byte(weeklyDates))
-		createWeeklyFile(dateTime, nFileContent, resolvedOutputDir)
+		createWeeklyFile(soft, dateTime, nFileContent, resolvedOutputDir)
 	}
 }

@@ -60,15 +60,19 @@ func GetCommandDaily() *cobra.Command {
 	utils.CreateRequiredFlagWithViperConfig(DailyCommand, "template", "", "Template to use for the daily note. If not provided, the default template will be used.", "obsidian-daily-template-path")
 	utils.CreateFlagWithViperConfig(DailyCommand, "dir", "", "Directory to create the daily note. If not provided, the current directory will be used.", "obsidian-daily-note-dir")
 	DailyCommand.Flags().Int("quantity", 1, "Generate the next n days. If not provided, the current day will be used.")
+	DailyCommand.Flags().Bool("soft", false, "Not generate error if file exists.")
 
 	return DailyCommand
 }
 
-func createDailyFile(date time.Time, fileContent []byte, outputDir string) {
+func createDailyFile(soft bool, date time.Time, fileContent []byte, outputDir string) {
 	fileContent = []byte(obsidian.DateReplacer(string(fileContent), date))
 
 	outputPath := filepath.Join(outputDir, date.Format("2006-01-02")+".md")
 	if myIo.FileExists(outputPath) {
+		if soft {
+			return
+		}
 		cobra.CheckErr(errors.New("File already exists: " + outputPath))
 	}
 
@@ -85,6 +89,7 @@ func runDaily(cmd *cobra.Command, args []string) {
 	templatePath, _ := cmd.Flags().GetString("template")
 	outputDir, _ := cmd.Flags().GetString("dir")
 	nextDays, _ := cmd.Flags().GetInt("quantity")
+	soft, _ := cmd.Flags().GetBool("soft")
 
 	fileContent := []byte("")
 
@@ -96,7 +101,7 @@ func runDaily(cmd *cobra.Command, args []string) {
 
 	for range nextDays {
 		resolvedOutputDir := obsidian.DateReplacer(outputDir, dateTime)
-		createDailyFile(dateTime, fileContent, resolvedOutputDir)
+		createDailyFile(soft, dateTime, fileContent, resolvedOutputDir)
 		dateTime = dateTime.AddDate(0, 0, 1)
 	}
 

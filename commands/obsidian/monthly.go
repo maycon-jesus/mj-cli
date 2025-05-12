@@ -61,10 +61,11 @@ func GetCommandMonthly() *cobra.Command {
 	utils.CreateRequiredFlagWithViperConfig(MonthlyCommand, "template", "", "Template to use for the monthly note. If not provided, the default template will be used.", "obsidian-monthly-template-path")
 	utils.CreateFlagWithViperConfig(MonthlyCommand, "dir", "", "Directory to create the monthly note. If not provided, the current directory will be used.", "obsidian-monthly-note-dir")
 	MonthlyCommand.Flags().Int("quantity", 1, "Generate the next n weeks. If not provided, the current day will be used.")
+	MonthlyCommand.Flags().Bool("soft", false, "Not generate error if file exists.")
 	return MonthlyCommand
 }
 
-func createMonthlyFile(date time.Time, fileContent []byte, outputDir string) {
+func createMonthlyFile(soft bool, date time.Time, fileContent []byte, outputDir string) {
 	fileContent = []byte(obsidian.DateReplacer(string(fileContent), date))
 
 	monthName := utils.GetMonthName(date.Month())
@@ -73,6 +74,9 @@ func createMonthlyFile(date time.Time, fileContent []byte, outputDir string) {
 	outputPath := filepath.Join(outputDir, monthNum+" - "+monthName+".md")
 
 	if myIo.FileExists(outputPath) {
+		if soft {
+			return
+		}
 		cobra.CheckErr(errors.New("File already exists: " + outputPath))
 	}
 
@@ -89,6 +93,7 @@ func runMonthly(cmd *cobra.Command, args []string) {
 	templatePath, _ := cmd.Flags().GetString("template")
 	outputDir, _ := cmd.Flags().GetString("dir")
 	nextDays, _ := cmd.Flags().GetInt("quantity")
+	soft, _ := cmd.Flags().GetBool("soft")
 
 	fileContent := []byte("")
 
@@ -100,7 +105,7 @@ func runMonthly(cmd *cobra.Command, args []string) {
 
 	for range nextDays {
 		resolvedOutputDir := obsidian.DateReplacer(outputDir, dateTime)
-		createMonthlyFile(dateTime, fileContent, resolvedOutputDir)
+		createMonthlyFile(soft, dateTime, fileContent, resolvedOutputDir)
 		dateTime = dateTime.AddDate(0, 1, 0)
 	}
 }
