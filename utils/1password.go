@@ -1,0 +1,21 @@
+package utils
+
+import (
+	"context"
+	"github.com/1password/onepassword-sdk-go"
+)
+
+func ConnectOnePassword() (*onepassword.Client, error) {
+	token := "ops_eyJzaWduSW5BZGRyZXNzIjoibXkuMXBhc3N3b3JkLmNvbSIsInVzZXJBdXRoIjp7Im1ldGhvZCI6IlNSUGctNDA5NiIsImFsZyI6IlBCRVMyZy1IUzI1NiIsIml0ZXJhdGlvbnMiOjY1MDAwMCwic2FsdCI6InBKcjJUZDFoRmlQbjNHTmdGQ0JSSXcifSwiZW1haWwiOiIzN29oN2tvc3l2YXBnQDFwYXNzd29yZHNlcnZpY2VhY2NvdW50cy5jb20iLCJzcnBYIjoiMjljZmMwN2VhMjc2MmIyNTUyMDdlNzVkYTViODlkZjVmMmU1NjM1MmU5MTAxMGQyMzA2NTcwZGQ4MGIyMTgxNiIsIm11ayI6eyJhbGciOiJBMjU2R0NNIiwiZXh0Ijp0cnVlLCJrIjoiYXhzV2pnckNnem00WFFsbkdnZFR6N2N6bUdKSEg3alhjMUNQeHU4RXNfZyIsImtleV9vcHMiOlsiZW5jcnlwdCIsImRlY3J5cHQiXSwia3R5Ijoib2N0Iiwia2lkIjoibXAifSwic2VjcmV0S2V5IjoiQTMtQkxaSEwzLTlWMk4yRC1ZWDNTSi05NVQ5Ni1RTEJWUC1OTTNRNiIsInRocm90dGxlU2VjcmV0Ijp7InNlZWQiOiI2YjFiYWUzM2VjMmM1OTY3Y2QzZDBlNmVkNzMxMTg1NTkxZWM1MWM3NWI0NGU3MzM0Y2VhNzA1ZGRjOWQ0M2U1IiwidXVpZCI6IjNUU1NQVTVFWlpHS0pBT1g1TExSSlRDVU5FIn0sImRldmljZVV1aWQiOiJrZDY1ZXdlbnd5aXRhaWYyam82ZnVrczV6dSJ9"
+
+	client, err := onepassword.NewClient(
+		context.TODO(),
+		onepassword.WithServiceAccountToken(token),
+		// TODO: Set the following to your own integration name and version.
+		onepassword.WithIntegrationInfo("My 1Password Integration", "v1.0.0"),
+	)
+	if err != nil {
+		return nil, err
+	}
+	return client, nil
+}
