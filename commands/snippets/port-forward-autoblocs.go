@@ -60,12 +60,8 @@ func RunPortForwardAutoblocsApiSnippetCommand(cmd *cobra.Command, args []string)
 
 	gcloudLogin()
 
-	for successExec := false; successExec == false; {
-		err := runCommandRealtime("kubectl", []string{"port-forward", "--namespace", "apps", "autoblocs-api-infra-api-0", "8081:8080"}, false)
-		if err == nil {
-			successExec = true
-		} else {
-			time.Sleep(3 * time.Second)
-		}
+	for {
+		runCommandRealtime("kubectl", []string{"port-forward", "--namespace", "apps", "autoblocs-api-infra-api-0", "8081:8080"}, false)
+		time.Sleep(3 * time.Second)
 	}
 }

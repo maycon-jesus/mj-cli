@@ -3,12 +3,13 @@ module github.com/maycon-jesus/mj-cli
 go 1.24
 
 require (
+	github.com/1password/onepassword-sdk-go v0.3.0
+	github.com/google/uuid v1.6.0
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/viper v1.20.1
 )
 
 require (
-	github.com/1password/onepassword-sdk-go v0.3.0 // indirect
 	github.com/dylibso/observe-sdk/go v0.0.0-20240819160327-2d926c5d788a // indirect
 	github.com/extism/go-sdk v1.7.0 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
