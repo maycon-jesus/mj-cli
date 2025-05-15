@@ -110,7 +110,6 @@ func runWeekly(cmd *cobra.Command, args []string) {
 	dateTime = dateTime.AddDate(0, 0, correctionFactor)
 
 	for range nextDays {
-		resolvedOutputDir := obsidian.DateReplacer(outputDir, dateTime)
 		weeklyDates := ""
 		for i := 0; i < 7; i++ {
 			if i > 0 {
@@ -120,6 +119,7 @@ func runWeekly(cmd *cobra.Command, args []string) {
 			dateTime = dateTime.AddDate(0, 0, 1)
 		}
 
+		resolvedOutputDir := obsidian.DateReplacer(outputDir, dateTime)
 		nFileContent := bytes.ReplaceAll(fileContent, []byte("{{WEEKLY_DATES}}"), []byte(weeklyDates))
 		createWeeklyFile(soft, dateTime, nFileContent, resolvedOutputDir)
 	}
