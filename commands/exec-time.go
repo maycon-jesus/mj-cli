@@ -12,11 +12,10 @@ import (
 )
 
 var ExecTimeCommand = &cobra.Command{
-	Use:     "exec-time",
-	Short:   "Return execution time of a snippet",
-	Aliases: []string{"sn"},
-	Run:     RunExecTimeCommand,
-	PreRun:  ValidadeFlagsExecTimeCommand,
+	Use:    "exec-time",
+	Short:  "Return execution time of a snippet",
+	Run:    RunExecTimeCommand,
+	PreRun: ValidadeFlagsExecTimeCommand,
 }
 
 func GetExecTimeCommand() *cobra.Command {
