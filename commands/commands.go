@@ -17,5 +17,6 @@ func GetCommandRoot() *cobra.Command {
 	CmdRoot.AddCommand(GetSnippetsCommand())
 	CmdRoot.AddCommand(GetCommandConfig())
 	CmdRoot.AddCommand(GetUuidCommand())
+	CmdRoot.AddCommand(GetExecTimeCommand())
 	return CmdRoot
 }
