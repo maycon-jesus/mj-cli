@@ -14,6 +14,7 @@ var SnippetsCommand = &cobra.Command{
 func GetSnippetsCommand() *cobra.Command {
 	SnippetsCommand.AddCommand(snippets.GetBulletJournalSnippetCommand())
 	SnippetsCommand.AddCommand(snippets.GetPortForwardAutoblocsApiSnippetCommand())
+	SnippetsCommand.AddCommand(snippets.GetPostInstallFedoraCommand())
 
 	return SnippetsCommand
 }

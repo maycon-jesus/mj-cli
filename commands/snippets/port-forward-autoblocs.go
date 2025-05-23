@@ -1,9 +1,8 @@
 package snippets
 
 import (
-	"fmt"
+	"github.com/maycon-jesus/mj-cli/utils/terminal"
 	"github.com/spf13/cobra"
-	"os/exec"
 	"time"
 )
 
@@ -18,31 +17,10 @@ func GetPortForwardAutoblocsApiSnippetCommand() *cobra.Command {
 	return PortForwardAutoblocsApiSnippetCommand
 }
 
-// runCommandRealtime executes a shell command in real-time, streaming stdout and stderr based on the visibility setting.
-func runCommandRealtime(command string, args []string, hideContent bool) error {
-	cmde := exec.Command(command, args...)
-	printer := MyPrinter{hideContent: hideContent}
-	cmde.Stdout = printer
-	cmde.Stderr = printer
-	err := cmde.Run()
-	if err != nil {
-		fmt.Println("Error: ", err)
-		return err
-	}
-	return nil
-}
-
-// runCommand executes a shell command with the given arguments and returns its combined output and error, if any.
-func runCommand(command string, args []string) (string, error) {
-	cmde := exec.Command(command, args...)
-	content, err := cmde.CombinedOutput()
-	return string(content), err
-}
-
 // checkIsLogged validates if the user has an active session by attempting to retrieve an identity token using gcloud CLI.
 // Returns true if successfully authenticated, otherwise returns false.
 func checkIsLogged() bool {
-	_, err := runCommand("gcloud", []string{"auth", "print-identity-token"})
+	_, err := terminal.RunCommand("gcloud", []string{"auth", "print-identity-token"})
 
 	if err != nil {
 		return false
@@ -57,7 +35,7 @@ func gcloudLogin() {
 		return
 	}
 
-	err := runCommandRealtime("gcloud", []string{"auth", "login"}, false)
+	err := terminal.RunCommandRealtime("gcloud auth login", terminal.RunCommandOptions{})
 	cobra.CheckErr(err)
 }
 
@@ -70,7 +48,7 @@ func RunPortForwardAutoblocsApiSnippetCommand(cmd *cobra.Command, args []string)
 	gcloudLogin()
 
 	for {
-		runCommandRealtime("kubectl", []string{"port-forward", "--namespace", "apps", "autoblocs-api-infra-api-0", "8081:8080"}, false)
+		terminal.RunCommandRealtime("kubectl port-forward --namespace apps autoblocs-api-infra-api-0 8081:8080", terminal.RunCommandOptions{})
 		time.Sleep(3 * time.Second)
 	}
 }

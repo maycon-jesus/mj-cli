@@ -1,0 +1,10 @@
+[user]
+    name = Maycon Jesus
+    email = contato@mayconjesus.dev
+    signingkey = ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG2o3ngJET2MzJZRRKI7PQk32f1L6xf0hrgRzrjQLmG9
+[gpg]
+    format = ssh
+[gpg "ssh"]
+    program = /opt/1Password/op-ssh-sign
+[commit]
+    gpgsign = true
