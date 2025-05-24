@@ -99,7 +99,10 @@ func RunPostInstallFedoraCommand(cmd *cobra.Command, args []string) {
 
 	// Atualizando o sistema
 	reader, writer := io.Pipe()
-	writer.Write([]byte("[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\nautorefresh=1\ntype=rpm-md\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc"))
+	go func() {
+		defer writer.Close()
+		writer.Write([]byte("[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\nautorefresh=1\ntype=rpm-md\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc"))
+	}()
 	terminalOptions.Stdin = reader
 	execCommandsGroup("CONFIGURANDO REPOSITÓRIOS -> VsCode", []string{
 		"sudo tee /etc/yum.repos.d/vscode.repo",
