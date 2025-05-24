@@ -22,7 +22,6 @@ func ConvertStringToCmd(cmdStr string) ([]string, error) {
 	for _, c := range cmdStr {
 		if escapeNext {
 			fmt.Println(string(c))
-			current = append(current, '\\')
 			current = append(current, c)
 			escapeNext = false
 			continue
