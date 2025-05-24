@@ -2,6 +2,7 @@ package snippets
 
 import (
 	_ "embed"
+	"io"
 	"path/filepath"
 )
 import (
@@ -97,10 +98,14 @@ func RunPostInstallFedoraCommand(cmd *cobra.Command, args []string) {
 	})
 
 	// Atualizando o sistema
+	reader, writer := io.Pipe()
+	writer.Write([]byte("[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\nautorefresh=1\ntype=rpm-md\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc"))
+	terminalOptions.Stdin = reader
 	execCommandsGroup("CONFIGURANDO REPOSITÓRIOS -> VsCode", []string{
-		"sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc",
-		"echo -e '[code]\\\\nname=Visual Studio Code\\\\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\\\\nenabled=1\\\\nautorefresh=1\\\\ntype=rpm-md\\\\ngpgcheck=1\\\\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc' | sudo tee /etc/yum.repos.d/vscode.repo > /dev/null",
+		"sudo tee /etc/yum.repos.d/vscode.repo",
 	})
+	terminalOptions.Stdin = os.Stdin
+
 	execCommandsGroup("CONFIGURANDO REPOSITÓRIOS -> Docker", []string{
 		"sudo dnf -y install dnf-plugins-core",
 		"sudo dnf-3 config-manager --add-repo https://download.docker.com/linux/fedora/docker-ce.repo",
