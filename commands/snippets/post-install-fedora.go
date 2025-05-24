@@ -18,6 +18,7 @@ var PackagesRpm = []string{
 	"code",
 	"zsh",
 	"make",
+	"zsh",
 }
 
 var PackagesRpmDownload = []string{
@@ -135,14 +136,13 @@ func RunPostInstallFedoraCommand(cmd *cobra.Command, args []string) {
 		fmt.Sprintf("rm -rf %s/toolbox.tar.gz %s/%s", tmpDir, tmpDir, toolboxVersion),
 	})
 
-	_ = os.Setenv("RUNZSH", "no")
 	execCommandsGroup("Instalando ZSH", []string{
 		fmt.Sprintf("wget https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh -O %s/install.sh", tmpDir),
 		fmt.Sprintf("chmod +x %s/install.sh", tmpDir),
-		fmt.Sprintf("%s/install.sh", tmpDir),
+		fmt.Sprintf("%s/install.sh --unattended", tmpDir),
 		fmt.Sprintf("rm %s/install.sh", tmpDir),
+		fmt.Sprintf("chsh -s /bin/zsh"),
 	})
-	_ = os.Unsetenv("RUNZSH")
 
 	printGroupName("CONFIGURANDO GIT")
 	gitConfigPath := fmt.Sprintf("%s/.gitconfig", homeDir)
