@@ -79,6 +79,7 @@ func execCommandsGroup(groupName string, commands []string) {
 		err := terminal.RunCommandRealtime(command, terminalOptions)
 		if err != nil {
 			printGroupCommand("Erro ao executar o comando")
+			cobra.CheckErr(err)
 			return
 		}
 	}
@@ -149,7 +150,14 @@ func RunPostInstallFedoraCommand(cmd *cobra.Command, args []string) {
 		fmt.Sprintf("chmod +x %s/install.sh", tmpDir),
 		fmt.Sprintf("%s/install.sh --unattended", tmpDir),
 		fmt.Sprintf("rm %s/install.sh", tmpDir),
-		fmt.Sprintf("chsh -s /bin/zsh"),
+	})
+
+	execCommandsGroup("Instalando tema ZSH: Starship", []string{
+		fmt.Sprintf("wget https://starship.rs/install.sh -O %s/install.sh", tmpDir),
+		fmt.Sprintf("chmod +x %s/install.sh", tmpDir),
+		fmt.Sprintf("%s/install.sh", tmpDir),
+		fmt.Sprintf("rm %s/install.sh", tmpDir),
+		fmt.Sprintf("starship preset jetpack -o ~/.config/starship.toml"),
 	})
 
 	printGroupName("CONFIGURANDO GIT")
@@ -211,4 +219,8 @@ func RunPostInstallFedoraCommand(cmd *cobra.Command, args []string) {
 	printGroupCommand("Configurando velocidade do touchpad")
 	err = terminal.RunCommandRealtime("dconf write /org/gnome/desktop/peripherals/touchpad/speed \"0.20171673819742497\"", terminalOptions)
 	cobra.CheckErr(err)
+
+	execCommandsGroup("Setar ZSH como shell padrão", []string{
+		fmt.Sprintf("chsh -s /bin/zsh"),
+	})
 }
