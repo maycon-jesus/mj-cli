@@ -32,7 +32,6 @@ func ConvertStringToCmd(cmdStr string) ([]string, error) {
 			escapeNext = true
 		case '"':
 			insideQuotes = !insideQuotes
-			current = append(current, c)
 		case ' ':
 			if insideQuotes {
 				current = append(current, c)
