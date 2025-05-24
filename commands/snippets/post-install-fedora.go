@@ -152,7 +152,7 @@ func RunPostInstallFedoraCommand(cmd *cobra.Command, args []string) {
 	cobra.CheckErr(err)
 
 	printGroupName("CONFIGURANDO 1Password")
-	onePasswordConfigPath := fmt.Sprintf("%s/.config/1Password/ssh/", homeDir)
+	onePasswordConfigPath := fmt.Sprintf("%s/.config/1Password/ssh/agent.toml", homeDir)
 	err = os.RemoveAll(sshConfigPath)
 	cobra.CheckErr(err)
 	err = os.MkdirAll(filepath.Dir(onePasswordConfigPath), 0744)
