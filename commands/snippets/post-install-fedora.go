@@ -37,6 +37,8 @@ var PackagesFlatpak = []string{
 	"com.mattjakeman.ExtensionManager",
 	"com.surfshark.Surfshark",
 	"org.gnome.Mahjongg",
+	"org.telegram.desktop",
+	"io.github.fabrialberio.pinapp",
 }
 
 var NerdFonts = []string{
