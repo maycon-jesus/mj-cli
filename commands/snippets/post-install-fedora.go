@@ -2,15 +2,14 @@ package snippets
 
 import (
 	_ "embed"
-	"io"
-	"path/filepath"
-)
-import (
 	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+	"strings"
+
 	"github.com/maycon-jesus/mj-cli/utils/terminal"
 	"github.com/spf13/cobra"
-	"os"
-	"strings"
 )
 
 var PackagesRpm = []string{
@@ -38,6 +37,15 @@ var PackagesFlatpak = []string{
 	"com.mattjakeman.ExtensionManager",
 	"com.surfshark.Surfshark",
 	"org.gnome.Mahjongg",
+}
+
+var NerdFonts = []string{
+	"Hack",
+	"FiraCode",
+	"Ubuntu",
+	"UbuntuMono",
+	"UbuntuSans",
+	"JetBrainsMono",
 }
 
 var AppImageDir = "Apps"
@@ -152,14 +160,6 @@ func RunPostInstallFedoraCommand(cmd *cobra.Command, args []string) {
 		fmt.Sprintf("rm %s/install.sh", tmpDir),
 	})
 
-	execCommandsGroup("Instalando tema ZSH: Starship", []string{
-		fmt.Sprintf("wget https://starship.rs/install.sh -O %s/install.sh", tmpDir),
-		fmt.Sprintf("chmod +x %s/install.sh", tmpDir),
-		fmt.Sprintf("%s/install.sh", tmpDir),
-		fmt.Sprintf("rm %s/install.sh", tmpDir),
-		fmt.Sprintf("starship preset jetpack -o ~/.config/starship.toml"),
-	})
-
 	printGroupName("CONFIGURANDO GIT")
 	gitConfigPath := fmt.Sprintf("%s/.gitconfig", homeDir)
 	err := os.RemoveAll(gitConfigPath)
@@ -218,6 +218,28 @@ func RunPostInstallFedoraCommand(cmd *cobra.Command, args []string) {
 
 	printGroupCommand("Configurando velocidade do touchpad")
 	err = terminal.RunCommandRealtime("dconf write /org/gnome/desktop/peripherals/touchpad/speed \"0.20171673819742497\"", terminalOptions)
+	cobra.CheckErr(err)
+
+	execCommandsGroup("Instalando tema ZSH: Starship", []string{
+		fmt.Sprintf("wget https://starship.rs/install.sh -O %s/install.sh", tmpDir),
+		fmt.Sprintf("chmod +x %s/install.sh", tmpDir),
+		fmt.Sprintf("%s/install.sh", tmpDir),
+		fmt.Sprintf("rm %s/install.sh", tmpDir),
+		fmt.Sprintf("starship preset jetpack -o ~/.config/starship.toml"),
+	})
+
+	for _, font := range NerdFonts {
+		execCommandsGroup(fmt.Sprintf("Instalando NerdFont : %s", font), []string{
+			fmt.Sprintf("wget https://github.com/ryanoasis/nerd-fonts/releases/download/v3.4.0/%s.zip", font),
+			fmt.Sprintf("unzip \"%s/%s.zip\" -d %s/%s", tmpDir, font, tmpDir, font),
+			fmt.Sprintf("mkdir -p %s/.local/share/fonts", homeDir),
+			fmt.Sprintf("mv %s/%s/*.ttf %s/.local/share/fonts", tmpDir, font, homeDir),
+			fmt.Sprintf("rm -rf %s/%s*", tmpDir, font),
+		})
+	}
+
+	printGroupCommand("Atualizando cache das fontes")
+	err = terminal.RunCommandRealtime("fc-cache", terminalOptions)
 	cobra.CheckErr(err)
 
 	execCommandsGroup("Setar ZSH como shell padrão", []string{
