@@ -4,6 +4,7 @@ import (
 	"os"
 
 	"github.com/maycon-jesus/mj-cli/internal/commands"
+	alias_cmd "github.com/maycon-jesus/mj-cli/internal/commands_repository/alias"
 	config_cmd "github.com/maycon-jesus/mj-cli/internal/commands_repository/config"
 	"github.com/maycon-jesus/mj-cli/internal/config"
 	"github.com/maycon-jesus/mj-cli/pkg/intl"
@@ -24,6 +25,7 @@ func Execute(configRegistry *config.ConfigRegistry, translator *intl.Translator)
 	// Registra os comandos
 	registry.RegisterMultiple(
 		config_cmd.NewConfigCommand(),
+		alias_cmd.NewAliasCommand(),
 	)
 
 	// Anexa todos os comandos ao rootCmd
