@@ -2,18 +2,9 @@
 // com estilos e cores ANSI para saída em terminal.
 package beautyoutput
 
-import "strconv"
-
-// StrBuilder é um builder para construção de strings estilizadas com códigos ANSI.
-// Utiliza o padrão fluent interface, permitindo encadeamento de métodos.
-type StrBuilder struct {
-	content string
-}
-
-// NewStrBuilder cria e retorna uma nova instância de StrBuilder.
-func NewStrBuilder() *StrBuilder {
-	return &StrBuilder{content: ""}
-}
+import (
+	"strconv"
+)
 
 // Bold aplica o estilo negrito ao texto subsequente.
 func (sb *StrBuilder) Bold() *StrBuilder {
@@ -141,19 +132,8 @@ func (sb *StrBuilder) RGB(r, g, b int) *StrBuilder {
 	return sb
 }
 
-// Text adiciona o texto especificado ao builder.
-func (sb *StrBuilder) Text(text string) *StrBuilder {
-	sb.content += text
-	return sb
-}
-
 // Reset adiciona o código de reset ANSI, removendo todos os estilos e cores aplicados.
 func (sb *StrBuilder) Reset() *StrBuilder {
 	sb.content += "\033[0m"
 	return sb
-}
-
-// String retorna a string construída com um reset automático ao final.
-func (sb *StrBuilder) String() string {
-	return sb.content + "\033[0m"
 }

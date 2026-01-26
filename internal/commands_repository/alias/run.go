@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/maycon-jesus/mj-cli/internal/commands"
+	beautyoutput "github.com/maycon-jesus/mj-cli/pkg/beauty_output"
 	"github.com/maycon-jesus/mj-cli/pkg/cmd"
 	"github.com/maycon-jesus/mj-cli/pkg/utils"
 )
@@ -28,7 +29,25 @@ func newAliasRunCommand() *commands.Command {
 
 			command = utils.ReplaceVariables(command, variables)
 
-			cmd.RunCommand(command)
+			output := beautyoutput.NewStrBuilder()
+			output.TitleLinef("Executando alias %s", execData.Args[0])
+			output.Lambda(command).NewLine()
+			fmt.Print(output)
+
+			spinner := beautyoutput.NewSpinner("Finalizando...")
+			spinner.Start()
+			err := cmd.RunCommandTest(command, spinner)
+			if err != nil {
+				output := beautyoutput.NewStrBuilder()
+				output.Failure(err.Error()).NewLine()
+				spinner.Log(output.String())
+			} else {
+				output := beautyoutput.NewStrBuilder()
+				output.Success("Comando executado com sucesso!").NewLine()
+				spinner.Log(output.String())
+			}
+
+			spinner.Stop("Alias executado.")
 			return nil
 		},
 	}
