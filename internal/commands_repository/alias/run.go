@@ -42,6 +42,7 @@ func newAliasRunCommand() *commands.Command {
 			})
 			if err != nil {
 				spinner.StopWithError(err.Error())
+				return err
 			} else {
 				spinner.Stop("Alias executado com sucesso!")
 			}
