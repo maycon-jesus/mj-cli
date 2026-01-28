@@ -7,8 +7,9 @@ package intl
 import (
 	"errors"
 	"maps"
-	"regexp"
 	"sync"
+
+	"github.com/maycon-jesus/mj-cli/pkg/utils"
 )
 
 // Translator gerencia traduções para múltiplos idiomas.
@@ -22,8 +23,6 @@ type Translator struct {
 // Translations mapeia códigos de idioma para seus dicionários de mensagens.
 // Exemplo: {"en": {"greeting": "Hello"}, "pt-BR": {"greeting": "Olá"}}
 type Translations map[string]map[string]string
-
-var doubleMustacheRegex = regexp.MustCompile(`\{\{(\w+)\}\}`)
 
 // NewTranslator cria um novo Translator com o idioma especificado.
 // Se lang for uma string vazia, o padrão será "en" (inglês).
@@ -79,7 +78,7 @@ func (t *Translator) Language() string {
 func (t *Translator) tLocked(lang string, key string, variables map[string]string) string {
 	if msgs, ok := t.messages[lang]; ok {
 		if msg, ok := msgs[key]; ok {
-			return t.replaceVariables(msg, variables)
+			return utils.ReplaceVariables(msg, variables)
 		}
 	}
 
@@ -89,23 +88,6 @@ func (t *Translator) tLocked(lang string, key string, variables map[string]strin
 	}
 
 	return key
-}
-
-// replaceVariables substitui placeholders {{variável}} pelos valores do mapa.
-func (t *Translator) replaceVariables(msg string, variables map[string]string) string {
-	if len(variables) == 0 {
-		return msg
-	}
-
-	return doubleMustacheRegex.ReplaceAllStringFunc(msg, func(match string) string {
-		groups := doubleMustacheRegex.FindStringSubmatch(match)
-		if len(groups) > 1 {
-			if val, ok := variables[groups[1]]; ok {
-				return val
-			}
-		}
-		return match
-	})
 }
 
 // T traduz uma chave para o idioma atual, substituindo variáveis se fornecidas.
