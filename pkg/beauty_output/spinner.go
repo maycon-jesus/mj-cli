@@ -80,6 +80,13 @@ func (s *Spinner) Stop(finalMessage string) {
 	fmt.Print("\033[?25h") // mostra cursor
 }
 
+func (s *Spinner) StopWithError(finalMessage string) {
+	close(s.stop)
+	<-s.done
+	fmt.Printf("\r\033[K\033[31m✗\033[0m %s\n", finalMessage)
+	fmt.Print("\033[?25h") // mostra cursor
+}
+
 func (s *Spinner) Write(p []byte) (n int, err error) {
 	s.Log(string(p))
 	return len(p), nil
