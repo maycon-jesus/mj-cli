@@ -24,17 +24,22 @@ func RunCommand(cmdStr string) error {
 	return nil
 }
 
-func RunCommandTest(cmdStr string, writer io.Writer) error {
+type CommandOptions struct {
+	Stdin  io.Reader
+	Stdout io.Writer
+	Stderr io.Writer
+}
+
+func RunCommandWithOptions(cmdStr string, options CommandOptions) error {
 	args, err := parseCommand(cmdStr)
 	if err != nil {
 		return err
 	}
 
 	cmd := exec.Command(args[0], args[1:]...)
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = writer
-	cmd.Stderr = writer
-
+	cmd.Stdin = options.Stdin
+	cmd.Stdout = options.Stdout
+	cmd.Stderr = options.Stderr
 	if err := cmd.Run(); err != nil {
 		return err
 	}
