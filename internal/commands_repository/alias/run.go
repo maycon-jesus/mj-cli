@@ -34,20 +34,18 @@ func newAliasRunCommand() *commands.Command {
 			output.Lambda(command).NewLine()
 			fmt.Print(output)
 
-			spinner := beautyoutput.NewSpinner("Finalizando...")
+			spinner := beautyoutput.NewSpinner("Executando...")
 			spinner.Start()
-			err := cmd.RunCommandTest(command, spinner)
+			err := cmd.RunCommandWithOptions(command, cmd.CommandOptions{
+				Stdout: spinner,
+				Stderr: spinner,
+			})
 			if err != nil {
-				output := beautyoutput.NewStrBuilder()
-				output.Failure(err.Error()).NewLine()
-				spinner.Log(output.String())
+				spinner.StopWithError(err.Error())
 			} else {
-				output := beautyoutput.NewStrBuilder()
-				output.Success("Comando executado com sucesso!").NewLine()
-				spinner.Log(output.String())
+				spinner.Stop("Alias executado com sucesso!")
 			}
 
-			spinner.Stop("Alias executado.")
 			return nil
 		},
 	}
