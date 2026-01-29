@@ -10,19 +10,25 @@ import (
 
 func newAliasSetCommand() *commands.Command {
 	return &commands.Command{
-		Name:             "set",
-		ShortDescription: "Set a command alias",
+		Name:                "set",
+		ShortDescriptionKey: "command.alias.set.short_description",
+		Args: []commands.Arg{
+			{Name: "name", DescriptionKey: "command.alias.set.arg.name", Required: true},
+			{Name: "command", DescriptionKey: "command.alias.set.arg.command", Required: true},
+		},
 		Translations: intl.Translations{
 			"en": {
-				"alias.set.success": "Alias '{{name}}' set to '{{command}}'",
+				"command.alias.set.short_description": "Set a command alias",
+				"command.alias.set.arg.name":          "The name of the alias to set",
+				"command.alias.set.arg.command":       "The command that the alias will represent",
+				"alias.set.success":                   "Alias '{{name}}' set to '{{command}}'",
 			},
 			"pt-BR": {
-				"alias.set.success": "Alias '{{name}}' definido para '{{command}}'",
+				"command.alias.set.short_description": "Definir um alias de comando",
+				"command.alias.set.arg.name":          "O nome do alias a ser definido",
+				"command.alias.set.arg.command":       "O comando que o alias representará",
+				"alias.set.success":                   "Alias '{{name}}' definido para '{{command}}'",
 			},
-		},
-		Args: []commands.Arg{
-			{Name: "name", Description: "The name of the alias to set", Required: true},
-			{Name: "command", Description: "The command that the alias will represent", Required: true},
 		},
 		Handler: func(ctx context.Context, execData *commands.ExecData) error {
 			key := fmt.Sprintf("aliases.%s", execData.Args[0])

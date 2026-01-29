@@ -7,6 +7,7 @@ import (
 	commandsrepository "github.com/maycon-jesus/mj-cli/internal/commands_repository"
 	alias_cmd "github.com/maycon-jesus/mj-cli/internal/commands_repository/alias"
 	config_cmd "github.com/maycon-jesus/mj-cli/internal/commands_repository/config"
+	branch_cmd "github.com/maycon-jesus/mj-cli/internal/commands_repository/git"
 	"github.com/maycon-jesus/mj-cli/internal/config"
 	"github.com/maycon-jesus/mj-cli/pkg/intl"
 )
@@ -23,6 +24,7 @@ func Execute(configRegistry *config.ConfigRegistry, translator *intl.Translator)
 	registry.RegisterMultiple(
 		config_cmd.NewConfigCommand(),
 		alias_cmd.NewAliasCommand(),
+		branch_cmd.NewGitCommand(),
 	)
 
 	// Anexa todos os comandos ao rootCmd

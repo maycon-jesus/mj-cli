@@ -12,12 +12,12 @@ import (
 // Command representa um comando customizado da CLI
 type Command struct {
 	// Propriedades básicas
-	Name             string
-	Args             []Arg
-	ShortDescription string
-	LongDescription  string
-	Example          string
-	Aliases          []string
+	Name                string
+	Args                []Arg
+	ShortDescriptionKey string
+	LongDescriptionKey  string
+	ExampleKey          string
+	Aliases             []string
 
 	// Flags personalizadas
 	Flags []Flag
@@ -46,7 +46,7 @@ type CommandHandler func(ctx context.Context, execData *ExecData) error
 type Flag struct {
 	Name           string
 	Shorthand      string
-	Description    string
+	DescriptionKey string
 	DefaultValue   interface{}
 	Required       bool
 	ConfigRegistry FlagConfigRegistry
@@ -58,9 +58,9 @@ type FlagConfigRegistry struct {
 }
 
 type Arg struct {
-	Name        string
-	Description string
-	Required    bool
+	Name           string
+	DescriptionKey string
+	Required       bool
 }
 
 type ExecData struct {
@@ -71,16 +71,19 @@ type ExecData struct {
 }
 
 func (c *Command) ToCobraCommand(config *config.ConfigRegistry, translator *intl.Translator) *cobra.Command {
+
+	// Adiciona traduções ao tradutor
+	translator.AddMessagesBulk(c.Translations)
+
+	// Cria o comando cobra
 	cmd := &cobra.Command{
 		Use:     makeUseString(c.Name, c.Args),
-		Short:   c.ShortDescription,
-		Long:    c.LongDescription,
-		Example: c.Example,
+		Short:   translator.T(c.ShortDescriptionKey, nil),
+		Long:    translator.T(c.LongDescriptionKey, nil),
+		Example: translator.T(c.ExampleKey, nil),
 		Aliases: c.Aliases,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
-
-			translator.AddMessagesBulk(c.Translations)
 
 			if c.BeforeRun != nil {
 				data := &ExecData{
@@ -131,7 +134,7 @@ func (c *Command) ToCobraCommand(config *config.ConfigRegistry, translator *intl
 
 	// Adiciona as flags
 	for _, flag := range c.Flags {
-		c.addFlag(config, cmd, flag)
+		c.addFlag(translator, config, cmd, flag)
 	}
 
 	// Adiciona subcomandos recursivamente
@@ -155,16 +158,16 @@ func makeUseString(name string, args []Arg) string {
 }
 
 // addFlag adiciona uma flag ao comando cobra baseado no tipo
-func (c *Command) addFlag(config *config.ConfigRegistry, cmd *cobra.Command, flag Flag) {
+func (c *Command) addFlag(translator *intl.Translator, config *config.ConfigRegistry, cmd *cobra.Command, flag Flag) {
 	switch v := flag.DefaultValue.(type) {
 	case string:
-		cmd.Flags().StringP(flag.Name, flag.Shorthand, v, flag.Description)
+		cmd.Flags().StringP(flag.Name, flag.Shorthand, v, translator.T(flag.DescriptionKey, nil))
 	case int:
-		cmd.Flags().IntP(flag.Name, flag.Shorthand, v, flag.Description)
+		cmd.Flags().IntP(flag.Name, flag.Shorthand, v, translator.T(flag.DescriptionKey, nil))
 	case bool:
-		cmd.Flags().BoolP(flag.Name, flag.Shorthand, v, flag.Description)
+		cmd.Flags().BoolP(flag.Name, flag.Shorthand, v, translator.T(flag.DescriptionKey, nil))
 	case []string:
-		cmd.Flags().StringSliceP(flag.Name, flag.Shorthand, v, flag.Description)
+		cmd.Flags().StringSliceP(flag.Name, flag.Shorthand, v, translator.T(flag.DescriptionKey, nil))
 	}
 	if flag.ConfigRegistry != (FlagConfigRegistry{}) {
 		config.GetModule(flag.ConfigRegistry.RegistryName).BindPFlag(flag.ConfigRegistry.Key, cmd.Flags().Lookup(flag.Name))
