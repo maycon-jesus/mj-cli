@@ -74,6 +74,12 @@ func (s *Spinner) Log(message string) {
 }
 
 func (s *Spinner) Stop(finalMessage string) {
+	select {
+	case <-s.stop:
+		return
+	default:
+	}
+
 	close(s.stop)
 	<-s.done
 	fmt.Printf("\r\033[K\033[32m✓\033[0m %s\n", finalMessage)
@@ -81,6 +87,12 @@ func (s *Spinner) Stop(finalMessage string) {
 }
 
 func (s *Spinner) StopWithError(finalMessage string) {
+	select {
+	case <-s.stop:
+		return
+	default:
+	}
+
 	close(s.stop)
 	<-s.done
 	fmt.Printf("\r\033[K\033[31m✗\033[0m %s\n", finalMessage)
