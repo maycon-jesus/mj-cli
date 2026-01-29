@@ -40,10 +40,9 @@ func newAliasRunCommand() *commands.Command {
 
 			command = utils.ReplaceVariables(command, variables)
 
-			output := beautyoutput.NewStrBuilder()
+			output := beautyoutput.NewStrBuilder().SetRealtimeOutput(true)
 			output.TitleLinef("Executando alias %s", execData.Args[0])
 			output.Lambda(command).NewLine()
-			fmt.Print(output)
 
 			spinner := beautyoutput.NewSpinner("Executando...")
 			spinner.Start()

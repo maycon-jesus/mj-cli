@@ -65,13 +65,11 @@ func newBranchNewCommand() *commands.Command {
 			}
 
 			output := beautyoutput.NewStrBuilder()
+			output.SetRealtimeOutput(true)
 			output.TitleLine(execData.Translator.T("command.git.new.creating_new_branch", map[string]string{"branch": branchName}))
-			output.Lambda(fmt.Sprintf("git checkout %s", mainBranch)).NewLine()
-			output.Lambda("git pull").NewLine()
-			output.Lambda(fmt.Sprintf("git checkout -b %s", branchName)).NewLine()
-			fmt.Print(output)
 
 			// Faz checkout na branch principal
+			output.Lambda(fmt.Sprintf("git checkout %s", mainBranch)).NewLine()
 			spinner := beautyoutput.NewSpinner(execData.Translator.T("command.git.new.checking_out", map[string]string{"branch": mainBranch}))
 			spinner.Start()
 			err = cmd.RunCommandWithOptions(fmt.Sprintf("git checkout %s", mainBranch), cmd.CommandOptions{})
@@ -82,6 +80,7 @@ func newBranchNewCommand() *commands.Command {
 			spinner.Stop(execData.Translator.T("command.git.new.checkout_success", map[string]string{"branch": mainBranch}))
 
 			// Atualiza a branch principal
+			output.Lambda("git pull").NewLine()
 			spinner = beautyoutput.NewSpinner(execData.Translator.T("command.git.new.pulling", map[string]string{"branch": mainBranch}))
 			spinner.Start()
 			err = cmd.RunCommandWithOptions("git pull", cmd.CommandOptions{})
@@ -92,6 +91,7 @@ func newBranchNewCommand() *commands.Command {
 			spinner.Stop(execData.Translator.T("command.git.new.pull_success", map[string]string{"branch": mainBranch}))
 
 			// Cria e faz checkout na nova branch
+			output.Lambda(fmt.Sprintf("git checkout -b %s", branchName)).NewLine()
 			spinner = beautyoutput.NewSpinner(execData.Translator.T("command.git.new.creating_branch", map[string]string{"branch": branchName}))
 			spinner.Start()
 			err = cmd.RunCommandWithOptions(fmt.Sprintf("git checkout -b %s", branchName), cmd.CommandOptions{})

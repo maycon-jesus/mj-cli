@@ -69,5 +69,3 @@ func (sb *StrBuilder) NumberedList(items []string) *StrBuilder {
 	}
 	return sb
 }
-
-// === SPINNERS E BARRAS DE PROGRESSO ===

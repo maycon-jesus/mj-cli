@@ -9,8 +9,8 @@ func TestNewStrBuilder(t *testing.T) {
 	if sb == nil {
 		t.Error("NewStrBuilder should not return nil")
 	}
-	if sb.content != "" {
-		t.Errorf("NewStrBuilder content should be empty, got %q", sb.content)
+	if sb.content.String() != "" {
+		t.Errorf("NewStrBuilder content should be empty, got %q", sb.content.String())
 	}
 }
 
@@ -30,8 +30,8 @@ func TestTextStyles(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			sb := NewStrBuilder()
 			tt.apply(sb)
-			if sb.content != tt.expected {
-				t.Errorf("%s() = %q, want %q", tt.name, sb.content, tt.expected)
+			if sb.content.String() != tt.expected {
+				t.Errorf("%s() = %q, want %q", tt.name, sb.content.String(), tt.expected)
 			}
 		})
 	}
@@ -57,8 +57,8 @@ func TestStandardColors(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			sb := NewStrBuilder()
 			tt.apply(sb)
-			if sb.content != tt.expected {
-				t.Errorf("%s() = %q, want %q", tt.name, sb.content, tt.expected)
+			if sb.content.String() != tt.expected {
+				t.Errorf("%s() = %q, want %q", tt.name, sb.content.String(), tt.expected)
 			}
 		})
 	}
@@ -84,8 +84,8 @@ func TestBrightColors(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			sb := NewStrBuilder()
 			tt.apply(sb)
-			if sb.content != tt.expected {
-				t.Errorf("%s() = %q, want %q", tt.name, sb.content, tt.expected)
+			if sb.content.String() != tt.expected {
+				t.Errorf("%s() = %q, want %q", tt.name, sb.content.String(), tt.expected)
 			}
 		})
 	}
@@ -109,8 +109,8 @@ func TestRGB(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			sb := NewStrBuilder()
 			sb.RGB(tt.r, tt.g, tt.b)
-			if sb.content != tt.expected {
-				t.Errorf("RGB(%d, %d, %d) = %q, want %q", tt.r, tt.g, tt.b, sb.content, tt.expected)
+			if sb.content.String() != tt.expected {
+				t.Errorf("RGB(%d, %d, %d) = %q, want %q", tt.r, tt.g, tt.b, sb.content.String(), tt.expected)
 			}
 		})
 	}
@@ -132,8 +132,8 @@ func TestText(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			sb := NewStrBuilder()
 			sb.Text(tt.text)
-			if sb.content != tt.expected {
-				t.Errorf("Text(%q) = %q, want %q", tt.text, sb.content, tt.expected)
+			if sb.content.String() != tt.expected {
+				t.Errorf("Text(%q) = %q, want %q", tt.text, sb.content.String(), tt.expected)
 			}
 		})
 	}
@@ -143,8 +143,8 @@ func TestReset(t *testing.T) {
 	sb := NewStrBuilder()
 	sb.Reset()
 	expected := "\033[0m"
-	if sb.content != expected {
-		t.Errorf("Reset() = %q, want %q", sb.content, expected)
+	if sb.content.String() != expected {
+		t.Errorf("Reset() = %q, want %q", sb.content.String(), expected)
 	}
 }
 
@@ -261,5 +261,272 @@ func TestFluentInterface(t *testing.T) {
 	}
 	if sb.RGB(0, 0, 0) != sb {
 		t.Error("RGB() should return the same StrBuilder instance")
+	}
+}
+
+func TestTextf(t *testing.T) {
+	tests := []struct {
+		name     string
+		format   string
+		args     []any
+		expected string
+	}{
+		{"Simple format", "Hello %s", []any{"World"}, "Hello World"},
+		{"Multiple args", "%s is %d years old", []any{"John", 30}, "John is 30 years old"},
+		{"No args", "Plain text", []any{}, "Plain text"},
+		{"Float format", "Value: %.2f", []any{3.14159}, "Value: 3.14"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sb := NewStrBuilder()
+			sb.Textf(tt.format, tt.args...)
+			if sb.content.String() != tt.expected {
+				t.Errorf("Textf(%q, %v) = %q, want %q", tt.format, tt.args, sb.content.String(), tt.expected)
+			}
+		})
+	}
+}
+
+func TestNewLine(t *testing.T) {
+	sb := NewStrBuilder()
+	sb.Text("Line1").NewLine().Text("Line2")
+	expected := "Line1\nLine2"
+	if sb.content.String() != expected {
+		t.Errorf("NewLine() = %q, want %q", sb.content.String(), expected)
+	}
+}
+
+func TestNewLineFluentInterface(t *testing.T) {
+	sb := NewStrBuilder()
+	if sb.NewLine() != sb {
+		t.Error("NewLine() should return the same StrBuilder instance")
+	}
+	if sb.Textf("test %s", "arg") != sb {
+		t.Error("Textf() should return the same StrBuilder instance")
+	}
+}
+
+func TestTemplateSuccess(t *testing.T) {
+	sb := NewStrBuilder()
+	sb.Success("Done")
+	result := sb.String()
+	if result != "\033[32m\033[1m✔ Done\033[0m\033[0m" {
+		t.Errorf("Success() = %q, want %q", result, "\033[32m\033[1m✔ Done\033[0m\033[0m")
+	}
+}
+
+func TestTemplateFailure(t *testing.T) {
+	sb := NewStrBuilder()
+	sb.Failure("Error occurred")
+	result := sb.String()
+	if result != "\033[31m\033[1m✖ Error occurred\033[0m\033[0m" {
+		t.Errorf("Failure() = %q, want %q", result, "\033[31m\033[1m✖ Error occurred\033[0m\033[0m")
+	}
+}
+
+func TestTemplateWarning(t *testing.T) {
+	sb := NewStrBuilder()
+	sb.Warning("Be careful")
+	result := sb.String()
+	if result != "\033[33m\033[1m⚠ Be careful\033[0m\033[0m" {
+		t.Errorf("Warning() = %q, want %q", result, "\033[33m\033[1m⚠ Be careful\033[0m\033[0m")
+	}
+}
+
+func TestTemplateInfo(t *testing.T) {
+	sb := NewStrBuilder()
+	sb.Info("Information")
+	result := sb.String()
+	if result != "\033[34m\033[1mℹ Information\033[0m\033[0m" {
+		t.Errorf("Info() = %q, want %q", result, "\033[34m\033[1mℹ Information\033[0m\033[0m")
+	}
+}
+
+func TestTemplatePending(t *testing.T) {
+	sb := NewStrBuilder()
+	sb.Pending("Loading")
+	result := sb.String()
+	if result != "\033[36m\033[1m… Loading\033[0m\033[0m" {
+		t.Errorf("Pending() = %q, want %q", result, "\033[36m\033[1m… Loading\033[0m\033[0m")
+	}
+}
+
+func TestTemplateLambda(t *testing.T) {
+	sb := NewStrBuilder()
+	sb.Lambda("Function")
+	result := sb.String()
+	if result != "\033[35m\033[1mλ Function\033[0m\033[0m" {
+		t.Errorf("Lambda() = %q, want %q", result, "\033[35m\033[1mλ Function\033[0m\033[0m")
+	}
+}
+
+func TestTemplateLambdaf(t *testing.T) {
+	sb := NewStrBuilder()
+	sb.Lambdaf("Value: %d", 42)
+	result := sb.String()
+	if result != "\033[35m\033[1mλ Value: 42\033[0m\033[0m" {
+		t.Errorf("Lambdaf() = %q, want %q", result, "\033[35m\033[1mλ Value: 42\033[0m\033[0m")
+	}
+}
+
+func TestTemplateTitleLine(t *testing.T) {
+	sb := NewStrBuilder()
+	sb.TitleLine("My Title")
+	result := sb.String()
+	expected := "\033[4m\033[1mMy Title\n\033[0m\033[0m"
+	if result != expected {
+		t.Errorf("TitleLine() = %q, want %q", result, expected)
+	}
+}
+
+func TestTemplateTitleLinef(t *testing.T) {
+	sb := NewStrBuilder()
+	sb.TitleLinef("Title %s", "Test")
+	result := sb.String()
+	expected := "\033[4m\033[1mTitle Test\n\033[0m\033[0m"
+	if result != expected {
+		t.Errorf("TitleLinef() = %q, want %q", result, expected)
+	}
+}
+
+func TestTemplateSectionLine(t *testing.T) {
+	sb := NewStrBuilder()
+	sb.SectionLine("Section")
+	result := sb.String()
+	expected := "\033[1mSection\033[0m\n\033[0m\033[0m"
+	if result != expected {
+		t.Errorf("SectionLine() = %q, want %q", result, expected)
+	}
+}
+
+func TestTemplateList(t *testing.T) {
+	sb := NewStrBuilder()
+	sb.List([]string{"Item 1", "Item 2", "Item 3"})
+	result := sb.String()
+	expected := "• Item 1\n• Item 2\n• Item 3\n\033[0m"
+	if result != expected {
+		t.Errorf("List() = %q, want %q", result, expected)
+	}
+}
+
+func TestTemplateListEmpty(t *testing.T) {
+	sb := NewStrBuilder()
+	sb.List([]string{})
+	result := sb.String()
+	expected := "\033[0m"
+	if result != expected {
+		t.Errorf("List([]) = %q, want %q", result, expected)
+	}
+}
+
+func TestTemplateNumberedList(t *testing.T) {
+	sb := NewStrBuilder()
+	sb.NumberedList([]string{"First", "Second", "Third"})
+	result := sb.String()
+	expected := "1. First\n2. Second\n3. Third\n\033[0m"
+	if result != expected {
+		t.Errorf("NumberedList() = %q, want %q", result, expected)
+	}
+}
+
+func TestTemplateNumberedListEmpty(t *testing.T) {
+	sb := NewStrBuilder()
+	sb.NumberedList([]string{})
+	result := sb.String()
+	expected := "\033[0m"
+	if result != expected {
+		t.Errorf("NumberedList([]) = %q, want %q", result, expected)
+	}
+}
+
+func TestTemplateFluentInterface(t *testing.T) {
+	sb := NewStrBuilder()
+
+	if sb.Success("msg") != sb {
+		t.Error("Success() should return the same StrBuilder instance")
+	}
+
+	sb2 := NewStrBuilder()
+	if sb2.Failure("msg") != sb2 {
+		t.Error("Failure() should return the same StrBuilder instance")
+	}
+
+	sb3 := NewStrBuilder()
+	if sb3.Warning("msg") != sb3 {
+		t.Error("Warning() should return the same StrBuilder instance")
+	}
+
+	sb4 := NewStrBuilder()
+	if sb4.Info("msg") != sb4 {
+		t.Error("Info() should return the same StrBuilder instance")
+	}
+
+	sb5 := NewStrBuilder()
+	if sb5.Pending("msg") != sb5 {
+		t.Error("Pending() should return the same StrBuilder instance")
+	}
+
+	sb6 := NewStrBuilder()
+	if sb6.Lambda("msg") != sb6 {
+		t.Error("Lambda() should return the same StrBuilder instance")
+	}
+
+	sb7 := NewStrBuilder()
+	if sb7.Lambdaf("msg %s", "arg") != sb7 {
+		t.Error("Lambdaf() should return the same StrBuilder instance")
+	}
+
+	sb8 := NewStrBuilder()
+	if sb8.TitleLine("msg") != sb8 {
+		t.Error("TitleLine() should return the same StrBuilder instance")
+	}
+
+	sb9 := NewStrBuilder()
+	if sb9.TitleLinef("msg %s", "arg") != sb9 {
+		t.Error("TitleLinef() should return the same StrBuilder instance")
+	}
+
+	sb10 := NewStrBuilder()
+	if sb10.SectionLine("msg") != sb10 {
+		t.Error("SectionLine() should return the same StrBuilder instance")
+	}
+
+	sb11 := NewStrBuilder()
+	if sb11.List([]string{}) != sb11 {
+		t.Error("List() should return the same StrBuilder instance")
+	}
+
+	sb12 := NewStrBuilder()
+	if sb12.NumberedList([]string{}) != sb12 {
+		t.Error("NumberedList() should return the same StrBuilder instance")
+	}
+}
+
+func TestRealtimeOutputDefault(t *testing.T) {
+	sb := NewStrBuilder()
+	if sb.IsRealtimeOutput() {
+		t.Error("IsRealtimeOutput() should be false by default")
+	}
+}
+
+func TestSetRealtimeOutput(t *testing.T) {
+	sb := NewStrBuilder()
+
+	sb.SetRealtimeOutput(true)
+	if !sb.IsRealtimeOutput() {
+		t.Error("IsRealtimeOutput() should be true after SetRealtimeOutput(true)")
+	}
+
+	sb.SetRealtimeOutput(false)
+	if sb.IsRealtimeOutput() {
+		t.Error("IsRealtimeOutput() should be false after SetRealtimeOutput(false)")
+	}
+}
+
+func TestSetRealtimeOutputFluentInterface(t *testing.T) {
+	sb := NewStrBuilder()
+	if sb.SetRealtimeOutput(true) != sb {
+		t.Error("SetRealtimeOutput() should return the same StrBuilder instance")
 	}
 }
