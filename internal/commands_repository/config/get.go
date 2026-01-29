@@ -12,18 +12,24 @@ func newGetCommand() *commands.Command {
 	return &commands.Command{
 		Name: "get",
 		Args: []commands.Arg{
-			{Name: "registry", Description: "The configuration registry to modify", Required: true},
-			{Name: "key", Description: "The configuration key to set", Required: false},
+			{Name: "registry", DescriptionKey: "command.config.get.arg.registry", Required: true},
+			{Name: "key", DescriptionKey: "command.config.get.arg.key", Required: false},
 		},
-		ShortDescription: "Get a configuration value",
+		ShortDescriptionKey: "command.config.get.short_description",
 		Translations: intl.Translations{
 			"en": {
-				"config.get.invalid_args":  "expected at most 2 arguments, got {{count}}",
-				"config.get.name_registry": "All settings in registry '{{registry}}':",
+				"command.config.get.short_description": "Get a configuration value",
+				"command.config.get.arg.registry":      "The configuration registry to get",
+				"command.config.get.arg.key":           "The configuration key to get",
+				"config.get.invalid_args":              "expected at most 2 arguments, got {{count}}",
+				"config.get.name_registry":             "All settings in registry '{{registry}}':",
 			},
 			"pt-BR": {
-				"config.get.invalid_args":  "esperado no máximo 2 argumentos, recebidos {{count}}",
-				"config.get.name_registry": "Todas as configurações do registro '{{registry}}':",
+				"command.config.get.short_description": "Obter um valor de configuração",
+				"command.config.get.arg.registry":      "O registro de configuração a ser obtido",
+				"command.config.get.arg.key":           "A chave de configuração a ser obtida",
+				"config.get.invalid_args":              "esperado no máximo 2 argumentos, recebidos {{count}}",
+				"config.get.name_registry":             "Todas as configurações do registro '{{registry}}':",
 			},
 		},
 		BeforeRun: func(ctx context.Context, execData *commands.ExecData) error {

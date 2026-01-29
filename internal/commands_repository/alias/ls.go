@@ -10,16 +10,18 @@ import (
 
 func newAliasLsCommand() *commands.Command {
 	return &commands.Command{
-		Name:             "ls",
-		ShortDescription: "List all aliases",
+		Name:                "ls",
+		ShortDescriptionKey: "command.alias.ls.short_description",
 		Translations: intl.Translations{
 			"en": {
-				"alias.ls.not_found": "No aliases found",
-				"alias.ls.header":    "Aliases:",
+				"command.alias.ls.short_description": "List all aliases",
+				"alias.ls.not_found":                 "No aliases found",
+				"alias.ls.header":                    "Aliases:",
 			},
 			"pt-BR": {
-				"alias.ls.not_found": "Nenhum alias encontrado",
-				"alias.ls.header":    "Aliases:",
+				"command.alias.ls.short_description": "Listar todos os aliases",
+				"alias.ls.not_found":                 "Nenhum alias encontrado",
+				"alias.ls.header":                    "Aliases:",
 			},
 		},
 		Handler: func(ctx context.Context, execData *commands.ExecData) error {

@@ -7,15 +7,26 @@ import (
 	"github.com/maycon-jesus/mj-cli/internal/commands"
 	beautyoutput "github.com/maycon-jesus/mj-cli/pkg/beauty_output"
 	"github.com/maycon-jesus/mj-cli/pkg/cmd"
+	"github.com/maycon-jesus/mj-cli/pkg/intl"
 	"github.com/maycon-jesus/mj-cli/pkg/utils"
 )
 
 func newAliasRunCommand() *commands.Command {
 	return &commands.Command{
-		Name:             "run",
-		ShortDescription: "Run a command alias",
+		Name:                "run",
+		ShortDescriptionKey: "command.alias.run.short_description",
 		Args: []commands.Arg{
-			{Name: "name", Description: "The name of the alias to run", Required: true},
+			{Name: "name", DescriptionKey: "command.alias.run.arg.name", Required: true},
+		},
+		Translations: intl.Translations{
+			"en": {
+				"command.alias.run.short_description": "Run a command alias",
+				"command.alias.run.arg.name":          "The name of the alias to run",
+			},
+			"pt-BR": {
+				"command.alias.run.short_description": "Executar um alias de comando",
+				"command.alias.run.arg.name":          "O nome do alias a ser executado",
+			},
 		},
 		Handler: func(ctx context.Context, execData *commands.ExecData) error {
 			key := fmt.Sprintf("aliases.%s", execData.Args[0])

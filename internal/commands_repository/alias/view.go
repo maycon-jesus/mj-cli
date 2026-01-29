@@ -10,18 +10,22 @@ import (
 
 func newAliasViewCommand() *commands.Command {
 	return &commands.Command{
-		Name:             "view",
-		ShortDescription: "View a specific alias",
+		Name:                "view",
+		ShortDescriptionKey: "command.alias.view.short_description",
+		Args: []commands.Arg{
+			{Name: "name", DescriptionKey: "command.alias.view.arg.name", Required: true},
+		},
 		Translations: intl.Translations{
 			"en": {
-				"alias.view.not_found": "Alias '{{name}}' not found",
+				"command.alias.view.short_description": "View a specific alias",
+				"command.alias.view.arg.name":          "The name of the alias to view",
+				"alias.view.not_found":                 "Alias '{{name}}' not found",
 			},
 			"pt-BR": {
-				"alias.view.not_found": "Alias '{{name}}' não encontrado",
+				"command.alias.view.short_description": "Visualizar um alias específico",
+				"command.alias.view.arg.name":          "O nome do alias a ser visualizado",
+				"alias.view.not_found":                 "Alias '{{name}}' não encontrado",
 			},
-		},
-		Args: []commands.Arg{
-			{Name: "name", Description: "The name of the alias to view", Required: true},
 		},
 		Handler: func(ctx context.Context, execData *commands.ExecData) error {
 			key := fmt.Sprintf("aliases.%s", execData.Args[0])
