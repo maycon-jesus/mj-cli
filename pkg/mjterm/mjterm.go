@@ -1,173 +1,141 @@
 package mjterm
 
 import (
+	"bufio"
 	"fmt"
+	"io"
+	"os"
 	"sync"
 	"sync/atomic"
+	"time"
 )
 
-const (
-	STATUS_CREATED = 1 + iota
-	STATUS_RUNNING
-	STATUS_SPINNER_RUNNING
-	STATUS_SPINNER_PAUSED
-	STATUS_SPINNER_STOPPED
-	STATUS_PAUSED
-	STATUS_STOPPING
-	STATUS_STOPPED
-)
+const defaultEventBufferSize = 10
+
+type Spinner struct {
+	id      string
+	message string
+	frames  []string
+	line    int
+	ticker  *time.Ticker
+	stop    chan struct{}
+}
 
 type Terminal struct {
-	priorityOutput  chan string
-	output          chan string
-	pause           chan struct{}
-	pauseAck        chan struct{}
-	resume          chan struct{}
-	resumeAck       chan struct{}
-	close           chan struct{}
-	closeAck        chan struct{}
-	closeSpinner    chan struct{}
-	closeSpinnerAck chan struct{}
-	stopOnce        sync.Once
-	status          atomic.Int32
-	lockClose       sync.RWMutex
-	lockInput       sync.Mutex
-
-	// spinner related
-	frames  []string
-	message string
+	events       chan msg
+	spinner      *Spinner
+	closed       atomic.Bool
+	wg           sync.WaitGroup
+	closeOnce    sync.Once
+	inputPending atomic.Bool
 }
 
 func New() *Terminal {
 	term := &Terminal{
-		priorityOutput:  make(chan string),
-		output:          make(chan string),
-		pause:           make(chan struct{}),
-		pauseAck:        make(chan struct{}),
-		resume:          make(chan struct{}),
-		resumeAck:       make(chan struct{}),
-		close:           make(chan struct{}),
-		closeAck:        make(chan struct{}),
-		closeSpinner:    make(chan struct{}),
-		closeSpinnerAck: make(chan struct{}),
-		status:          atomic.Int32{},
-		lockClose:       sync.RWMutex{},
-		lockInput:       sync.Mutex{},
-
-		// spinner related
-		frames:  []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"},
-		message: "Teste loading",
+		events:       make(chan msg, defaultEventBufferSize),
+		closed:       atomic.Bool{},
+		wg:           sync.WaitGroup{},
+		closeOnce:    sync.Once{},
+		inputPending: atomic.Bool{},
 	}
-	term.status.Store(STATUS_CREATED)
 
 	go func() {
-		term.status.Store(STATUS_RUNNING)
-		for {
-			select {
-			case <-term.pause:
-				term.status.Store(STATUS_PAUSED)
-				term.pauseAck <- struct{}{}
+		for event := range term.events {
+			switch e := event.(type) {
+			case printMsg:
+				if term.spinner != nil {
+					fmt.Print("\r\033[K") // clear line
+				}
+				fmt.Print(e.content)
+			case promptMsg:
+				term.inputPending.Store(true)
 
-				closedDuringPause := false
-				exitLoop := false
-				for !exitLoop {
+				if term.spinner != nil {
+					fmt.Print("\r\033[K") // clear line
+				}
+				fmt.Print(e.content)
+
+				sendToResultCh := func(text string, err error) {
 					select {
-					case <-term.resume:
-						exitLoop = true
-					case msg := <-term.priorityOutput:
-						fmt.Print(msg)
-					case <-term.close:
-						closedDuringPause = true
-						exitLoop = true
+					case e.result <- promptResult{response: text, err: err}:
+					default:
 					}
+					term.inputPending.Store(false)
 				}
 
-				if closedDuringPause {
-					goto drain
+				scanner := bufio.NewScanner(os.Stdin)
+				if scanner.Scan() {
+					sendToResultCh(scanner.Text(), nil)
+					break
 				}
-				term.status.Store(STATUS_RUNNING)
-				term.resumeAck <- struct{}{}
+				if err := scanner.Err(); err != nil {
+					sendToResultCh("", err)
+					break
+				}
+				sendToResultCh("", io.EOF)
+			case startSpinnerMsg:
+				spinner := &Spinner{
+					id:      e.id,
+					message: e.message,
+					frames:  e.frames,
+					line:    e.line,
+					ticker:  time.NewTicker(100 * time.Millisecond),
+					stop:    make(chan struct{}),
+				}
+				term.spinner = spinner
 
-			case msg := <-term.priorityOutput:
-				fmt.Print(msg)
-			case msg := <-term.output:
-				if term.status.Load() == STATUS_SPINNER_RUNNING {
-					fmt.Print("\r\033[K")
+				go func(s *Spinner) {
+					i := 0
+					for {
+						select {
+						case <-s.ticker.C:
+							if term.inputPending.Load() {
+								continue
+							}
+							msg := fmt.Sprintf("\r\033[K\033[36m%s\033[0m %s", s.frames[i%len(s.frames)], s.message)
+							term.addEvent(printMsg{content: msg})
+							i++
+						case <-s.stop:
+							s.ticker.Stop()
+							term.addEvent(printMsg{content: "\r\033[K"})
+							return
+						}
+					}
+				}(spinner)
+			case stopSpinnerMsg:
+				if term.spinner == nil {
+					break
 				}
-				fmt.Print(msg)
-			case <-term.close:
-				goto drain
+				close(term.spinner.stop)
+				term.spinner = nil
+				finalMsg := ""
+				if e.err {
+					finalMsg = fmt.Sprintf("\r\033[K\033[31m✗\033[0m %s\n", e.message)
+				} else {
+					finalMsg = fmt.Sprintf("\r\033[K\033[32m✓\033[0m %s\n", e.message)
+				}
+				term.addEvent(printMsg{content: finalMsg})
+			case closeMsg:
+				if term.spinner != nil {
+					close(term.spinner.stop)
+					term.spinner = nil
+				}
+				close(e.closed)
 			}
-		}
-
-	drain:
-		term.status.Store(STATUS_STOPPING)
-		for {
-			select {
-			case msg := <-term.priorityOutput:
-				fmt.Print(msg)
-			case msg := <-term.output:
-				fmt.Print(msg)
-			default:
-				term.closeAck <- struct{}{}
-				term.status.Store(STATUS_STOPPED)
-				return
-			}
+			term.wg.Done()
 		}
 	}()
 
 	return term
 }
 
-func (t *Terminal) Stop() {
-	t.lockClose.Lock()
-	defer t.lockClose.Unlock()
-	t.stopOnce.Do(func() {
-		close(t.close)
-		<-t.closeAck
-		close(t.priorityOutput)
-		close(t.output)
-		close(t.pause)
-		close(t.pauseAck)
-		close(t.resume)
-		close(t.resumeAck)
-		close(t.closeAck)
+func (t *Terminal) Close() {
+	t.closeOnce.Do(func() {
+		closed := make(chan struct{})
+		t.addEvent(closeMsg{closed})
+		t.closed.Store(true)
+		<-closed
+		t.wg.Wait()
+		close(t.events)
 	})
-}
-
-func (t *Terminal) Status() int32 {
-	return t.status.Load()
-}
-
-func (t *Terminal) isClosed() bool {
-	status := t.status.Load()
-	return status == STATUS_STOPPED || status == STATUS_STOPPING
-}
-
-func (t *Terminal) pauseOutput() error {
-	select {
-	case t.pause <- struct{}{}:
-		select {
-		case <-t.pauseAck:
-			return nil
-		case <-t.close:
-			return ErrTerminalClosed
-		}
-	case <-t.close:
-		return ErrTerminalClosed
-	}
-}
-
-func (t *Terminal) resumeOutput() error {
-	select {
-	case t.resume <- struct{}{}:
-		select {
-		case <-t.resumeAck:
-			return nil
-		case <-t.close:
-			return ErrTerminalClosed
-		}
-	case <-t.close:
-		return ErrTerminalClosed
-	}
 }
