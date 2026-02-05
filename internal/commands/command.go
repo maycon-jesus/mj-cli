@@ -5,6 +5,7 @@ import (
 
 	"github.com/maycon-jesus/mj-cli/internal/config"
 	"github.com/maycon-jesus/mj-cli/pkg/intl"
+	"github.com/maycon-jesus/mj-cli/pkg/mjterm"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -68,6 +69,7 @@ type ExecData struct {
 	Flags      *pflag.FlagSet
 	Config     *config.ConfigRegistry
 	Translator *intl.Translator
+	Terminal   *mjterm.Terminal
 }
 
 func (c *Command) ToCobraCommand(config *config.ConfigRegistry, translator *intl.Translator) *cobra.Command {
@@ -91,8 +93,12 @@ func (c *Command) ToCobraCommand(config *config.ConfigRegistry, translator *intl
 					Flags:      cmd.Flags(),
 					Config:     config,
 					Translator: translator,
+					Terminal:   mjterm.New(),
 				}
-				return c.BeforeRun(ctx, data)
+
+				err := c.BeforeRun(ctx, data)
+				data.Terminal.Close()
+				return err
 			}
 			return nil
 		},
@@ -111,8 +117,11 @@ func (c *Command) ToCobraCommand(config *config.ConfigRegistry, translator *intl
 					Flags:      cmd.Flags(),
 					Config:     config,
 					Translator: translator,
+					Terminal:   mjterm.New(),
 				}
-				return c.Handler(ctx, data)
+				err := c.Handler(ctx, data)
+				data.Terminal.Close()
+				return err
 			}
 
 			return nil
@@ -125,8 +134,11 @@ func (c *Command) ToCobraCommand(config *config.ConfigRegistry, translator *intl
 					Flags:      cmd.Flags(),
 					Config:     config,
 					Translator: translator,
+					Terminal:   mjterm.New(),
 				}
-				return c.AfterRun(ctx, data)
+				err := c.AfterRun(ctx, data)
+				data.Terminal.Close()
+				return err
 			}
 			return nil
 		},
