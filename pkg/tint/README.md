@@ -75,6 +75,25 @@ tint.NewStyle().
     Render("texto estilizado")
 ```
 
+## Templates pré-definidos
+
+Funções de atalho que combinam formato e cor em um único passo:
+
+| Função             | Formato            | Cor     |
+|--------------------|--------------------|---------|
+| `PresetTitle`      | `=== mensagem ===` | Cyan    |
+| `PresetSubtitle`   | `--- mensagem ---` | White   |
+| `PresetSuccess`    | `✔ mensagem`       | Green   |
+| `PresetError`      | `✖ mensagem`       | Red     |
+| `PresetWarning`    | `⚠ mensagem`       | Yellow  |
+| `PresetInfo`       | `ℹ mensagem`       | Blue    |
+| `PresetLambda`     | `λ mensagem`       | Magenta |
+
+```go
+fmt.Println(tint.PresetSuccess("operação concluída"))
+fmt.Println(tint.PresetError("algo deu errado"))
+```
+
 ## Detecção de suporte a cores
 
 O nível de suporte é detectado automaticamente no arranque do programa, com base nas variáveis de ambiente `NO_COLOR`, `COLORTERM` e `TERM`. O valor detectado fica exposto em `tint.DetectedColorSupport`:
