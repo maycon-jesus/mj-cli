@@ -5,9 +5,9 @@ import (
 	"fmt"
 
 	"github.com/maycon-jesus/mj-cli/internal/commands"
-	beautyoutput "github.com/maycon-jesus/mj-cli/pkg/beauty_output"
 	"github.com/maycon-jesus/mj-cli/pkg/cmd"
 	"github.com/maycon-jesus/mj-cli/pkg/intl"
+	"github.com/maycon-jesus/mj-cli/pkg/tint"
 	"github.com/maycon-jesus/mj-cli/pkg/utils"
 )
 
@@ -40,21 +40,21 @@ func newAliasRunCommand() *commands.Command {
 
 			command = utils.ReplaceVariables(command, variables)
 
-			output := beautyoutput.NewStrBuilder().SetRealtimeOutput(true)
-			output.TitleLinef("Executando alias %s", execData.Args[0])
-			output.Lambda(command).NewLine()
+			output := tint.PresetTitle("Executando alias " + execData.Args[0])
+			execData.Terminal.Println(output)
+			execData.Terminal.StartSpinner("cmd", "Executando alias...")
+			output = tint.PresetLambda(command)
+			execData.Terminal.Println(output)
 
-			spinner := beautyoutput.NewSpinner("Executando...")
-			spinner.Start()
 			err := cmd.RunCommandWithOptions(command, cmd.CommandOptions{
-				Stdout: spinner,
-				Stderr: spinner,
+				Stdout: execData.Terminal,
+				Stderr: execData.Terminal,
 			})
 			if err != nil {
-				spinner.StopWithError(err.Error())
+				execData.Terminal.StopSpinnerWithError("cmd", err.Error())
 				return err
 			} else {
-				spinner.Stop("Alias executado com sucesso!")
+				execData.Terminal.StopSpinner("cmd", "Alias executado com sucesso!")
 			}
 
 			return nil

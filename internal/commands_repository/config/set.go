@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/maycon-jesus/mj-cli/internal/commands"
-	beautyoutput "github.com/maycon-jesus/mj-cli/pkg/beauty_output"
 	"github.com/maycon-jesus/mj-cli/pkg/intl"
+	"github.com/maycon-jesus/mj-cli/pkg/tint"
 )
 
 func newSetCommand() *commands.Command {
@@ -60,7 +60,7 @@ func newSetCommand() *commands.Command {
 				"value":    value,
 				"registry": registry,
 			})
-			fmt.Println(beautyoutput.NewStrBuilder().Green().Text(str))
+			fmt.Println(tint.PresetSuccess(str))
 
 			return nil
 		},

@@ -6,9 +6,9 @@ import (
 	"fmt"
 
 	"github.com/maycon-jesus/mj-cli/internal/commands"
-	beautyoutput "github.com/maycon-jesus/mj-cli/pkg/beauty_output"
 	"github.com/maycon-jesus/mj-cli/pkg/cmd"
 	"github.com/maycon-jesus/mj-cli/pkg/intl"
+	"github.com/maycon-jesus/mj-cli/pkg/tint"
 )
 
 func newBranchNewCommand() *commands.Command {
@@ -64,42 +64,37 @@ func newBranchNewCommand() *commands.Command {
 				return execData.Translator.Errorf("command.git.new.failed_detect_main", map[string]string{"error": err.Error()})
 			}
 
-			output := beautyoutput.NewStrBuilder()
-			output.SetRealtimeOutput(true)
-			output.TitleLine(execData.Translator.T("command.git.new.creating_new_branch", map[string]string{"branch": branchName}))
+			execData.Terminal.Println(tint.PresetTitle(execData.Translator.T("command.git.new.creating_new_branch", map[string]string{"branch": branchName})))
 
 			// Faz checkout na branch principal
-			output.Lambda(fmt.Sprintf("git checkout %s", mainBranch)).NewLine()
-			spinner := beautyoutput.NewSpinner(execData.Translator.T("command.git.new.checking_out", map[string]string{"branch": mainBranch}))
-			spinner.Start()
+			execData.Terminal.Println(tint.PresetLambda(fmt.Sprintf("git checkout %s", mainBranch)))
+			execData.Terminal.StartSpinner("checkout", execData.Translator.T("command.git.new.checking_out", map[string]string{"branch": mainBranch}))
 			err = cmd.RunCommandWithOptions(fmt.Sprintf("git checkout %s", mainBranch), cmd.CommandOptions{})
 			if err != nil {
-				spinner.StopWithError(execData.Translator.T("command.git.new.failed_checkout", map[string]string{"branch": mainBranch}))
+				execData.Terminal.StopSpinnerWithError("checkout", execData.Translator.T("command.git.new.failed_checkout", map[string]string{"branch": mainBranch}))
 				return err
 			}
-			spinner.Stop(execData.Translator.T("command.git.new.checkout_success", map[string]string{"branch": mainBranch}))
+			execData.Terminal.StopSpinner("checkout", execData.Translator.T("command.git.new.checkout_success", map[string]string{"branch": mainBranch}))
 
 			// Atualiza a branch principal
-			output.Lambda("git pull").NewLine()
-			spinner = beautyoutput.NewSpinner(execData.Translator.T("command.git.new.pulling", map[string]string{"branch": mainBranch}))
-			spinner.Start()
+			execData.Terminal.Println(tint.PresetLambda("git pull"))
+			execData.Terminal.StartSpinner("pull", execData.Translator.T("command.git.new.pulling", map[string]string{"branch": mainBranch}))
 			err = cmd.RunCommandWithOptions("git pull", cmd.CommandOptions{})
 			if err != nil {
-				spinner.StopWithError(execData.Translator.T("command.git.new.failed_pull", map[string]string{"branch": mainBranch}))
+				execData.Terminal.StopSpinnerWithError("pull", execData.Translator.T("command.git.new.failed_pull", map[string]string{"branch": mainBranch}))
 				return err
 			}
-			spinner.Stop(execData.Translator.T("command.git.new.pull_success", map[string]string{"branch": mainBranch}))
+			execData.Terminal.StopSpinner("pull", execData.Translator.T("command.git.new.pull_success", map[string]string{"branch": mainBranch}))
 
 			// Cria e faz checkout na nova branch
-			output.Lambda(fmt.Sprintf("git checkout -b %s", branchName)).NewLine()
-			spinner = beautyoutput.NewSpinner(execData.Translator.T("command.git.new.creating_branch", map[string]string{"branch": branchName}))
-			spinner.Start()
+			execData.Terminal.Println(tint.PresetLambda(fmt.Sprintf("git checkout -b %s", branchName)))
+			execData.Terminal.StartSpinner("create", execData.Translator.T("command.git.new.creating_branch", map[string]string{"branch": branchName}))
 			err = cmd.RunCommandWithOptions(fmt.Sprintf("git checkout -b %s", branchName), cmd.CommandOptions{})
 			if err != nil {
-				spinner.StopWithError(execData.Translator.T("command.git.new.failed_create", map[string]string{"branch": branchName}))
+				execData.Terminal.StopSpinnerWithError("create", execData.Translator.T("command.git.new.failed_create", map[string]string{"branch": branchName}))
 				return err
 			}
-			spinner.Stop(execData.Translator.T("command.git.new.create_success", map[string]string{"branch": branchName}))
+			execData.Terminal.StopSpinner("create", execData.Translator.T("command.git.new.create_success", map[string]string{"branch": branchName}))
 
 			return nil
 		},
