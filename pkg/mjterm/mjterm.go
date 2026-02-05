@@ -133,9 +133,9 @@ func (t *Terminal) Close() {
 	t.closeOnce.Do(func() {
 		closed := make(chan struct{})
 		t.addEvent(closeMsg{closed})
-		t.closed.Store(true)
 		<-closed
 		t.wg.Wait()
+		t.closed.Store(true)
 		close(t.events)
 	})
 }
