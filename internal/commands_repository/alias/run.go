@@ -7,7 +7,7 @@ import (
 	"github.com/maycon-jesus/mj-cli/internal/commands"
 	"github.com/maycon-jesus/mj-cli/pkg/cmd"
 	"github.com/maycon-jesus/mj-cli/pkg/intl"
-	"github.com/maycon-jesus/mj-cli/pkg/tint"
+	"github.com/maycon-jesus/mj-cli/pkg/ui"
 	"github.com/maycon-jesus/mj-cli/pkg/utils"
 )
 
@@ -40,10 +40,10 @@ func newAliasRunCommand() *commands.Command {
 
 			command = utils.ReplaceVariables(command, variables)
 
-			output := tint.PresetTitle("Executando alias " + execData.Args[0])
+			output := ui.Title("Executando alias " + execData.Args[0])
 			execData.Terminal.Println(output)
 			execData.Terminal.StartSpinner("cmd", "Executando alias...")
-			output = tint.PresetLambda(command)
+			output = ui.Lambda(command)
 			execData.Terminal.Println(output)
 
 			err := cmd.RunCommandWithOptions(command, cmd.CommandOptions{
