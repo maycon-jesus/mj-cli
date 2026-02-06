@@ -6,7 +6,7 @@ import (
 
 	"github.com/maycon-jesus/mj-cli/internal/commands"
 	"github.com/maycon-jesus/mj-cli/pkg/intl"
-	"github.com/maycon-jesus/mj-cli/pkg/tint"
+	"github.com/maycon-jesus/mj-cli/pkg/ui"
 )
 
 func newSetCommand() *commands.Command {
@@ -60,7 +60,7 @@ func newSetCommand() *commands.Command {
 				"value":    value,
 				"registry": registry,
 			})
-			fmt.Println(tint.PresetSuccess(str))
+			fmt.Println(ui.Success(str))
 
 			return nil
 		},

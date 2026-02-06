@@ -8,7 +8,7 @@ import (
 	"github.com/maycon-jesus/mj-cli/internal/commands"
 	"github.com/maycon-jesus/mj-cli/pkg/cmd"
 	"github.com/maycon-jesus/mj-cli/pkg/intl"
-	"github.com/maycon-jesus/mj-cli/pkg/tint"
+	"github.com/maycon-jesus/mj-cli/pkg/ui"
 )
 
 func newBranchNewCommand() *commands.Command {
@@ -64,10 +64,10 @@ func newBranchNewCommand() *commands.Command {
 				return execData.Translator.Errorf("command.git.new.failed_detect_main", map[string]string{"error": err.Error()})
 			}
 
-			execData.Terminal.Println(tint.PresetTitle(execData.Translator.T("command.git.new.creating_new_branch", map[string]string{"branch": branchName})))
+			execData.Terminal.Println(ui.Title(execData.Translator.T("command.git.new.creating_new_branch", map[string]string{"branch": branchName})))
 
 			// Faz checkout na branch principal
-			execData.Terminal.Println(tint.PresetLambda(fmt.Sprintf("git checkout %s", mainBranch)))
+			execData.Terminal.Println(ui.Lambda(fmt.Sprintf("git checkout %s", mainBranch)))
 			execData.Terminal.StartSpinner("checkout", execData.Translator.T("command.git.new.checking_out", map[string]string{"branch": mainBranch}))
 			err = cmd.RunCommandWithOptions(fmt.Sprintf("git checkout %s", mainBranch), cmd.CommandOptions{})
 			if err != nil {
@@ -77,7 +77,7 @@ func newBranchNewCommand() *commands.Command {
 			execData.Terminal.StopSpinner("checkout", execData.Translator.T("command.git.new.checkout_success", map[string]string{"branch": mainBranch}))
 
 			// Atualiza a branch principal
-			execData.Terminal.Println(tint.PresetLambda("git pull"))
+			execData.Terminal.Println(ui.Lambda("git pull"))
 			execData.Terminal.StartSpinner("pull", execData.Translator.T("command.git.new.pulling", map[string]string{"branch": mainBranch}))
 			err = cmd.RunCommandWithOptions("git pull", cmd.CommandOptions{})
 			if err != nil {
@@ -87,7 +87,7 @@ func newBranchNewCommand() *commands.Command {
 			execData.Terminal.StopSpinner("pull", execData.Translator.T("command.git.new.pull_success", map[string]string{"branch": mainBranch}))
 
 			// Cria e faz checkout na nova branch
-			execData.Terminal.Println(tint.PresetLambda(fmt.Sprintf("git checkout -b %s", branchName)))
+			execData.Terminal.Println(ui.Lambda(fmt.Sprintf("git checkout -b %s", branchName)))
 			execData.Terminal.StartSpinner("create", execData.Translator.T("command.git.new.creating_branch", map[string]string{"branch": branchName}))
 			err = cmd.RunCommandWithOptions(fmt.Sprintf("git checkout -b %s", branchName), cmd.CommandOptions{})
 			if err != nil {
