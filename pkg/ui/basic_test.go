@@ -1,9 +1,23 @@
-package tint
+package ui
 
 import (
 	"strings"
 	"testing"
+
+	"github.com/maycon-jesus/mj-cli/pkg/tint"
 )
+
+func withColorSupport(t *testing.T, support tint.ColorSupport, fn func()) {
+	t.Helper()
+
+	original := tint.DetectedColorSupport
+	tint.DetectedColorSupport = support
+	defer func() {
+		tint.DetectedColorSupport = original
+	}()
+
+	fn()
+}
 
 func TestPresets_SemCores(t *testing.T) {
 	tests := []struct {
@@ -12,18 +26,18 @@ func TestPresets_SemCores(t *testing.T) {
 		msg  string
 		want string
 	}{
-		{"PresetTitle", PresetTitle, "título", "=== título ==="},
-		{"PresetSubtitle", PresetSubtitle, "subtítulo", "--- subtítulo ---"},
-		{"PresetSuccess", PresetSuccess, "sucesso", "✔ sucesso"},
-		{"PresetError", PresetError, "erro", "✖ erro"},
-		{"PresetWarning", PresetWarning, "aviso", "⚠ aviso"},
-		{"PresetInfo", PresetInfo, "info", "ℹ info"},
-		{"PresetLambda", PresetLambda, "lambda", "λ lambda"},
+		{"Title", Title, "título", "=== título ==="},
+		{"Subtitle", Subtitle, "subtítulo", "--- subtítulo ---"},
+		{"Success", Success, "sucesso", "✔ sucesso"},
+		{"Error", Error, "erro", "✖ erro"},
+		{"Warning", Warning, "aviso", "⚠ aviso"},
+		{"Info", Info, "info", "ℹ info"},
+		{"Lambda", Lambda, "lambda", "λ lambda"},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			withColorSupport(t, ColorSupportNone, func() {
+			withColorSupport(t, tint.ColorSupportNone, func() {
 				got := tt.fn(tt.msg)
 				if got != tt.want {
 					t.Errorf("%s(%q) = %q, want %q", tt.name, tt.msg, got, tt.want)
@@ -38,21 +52,21 @@ func TestPresets_ComCores(t *testing.T) {
 		name  string
 		fn    func(string) string
 		msg   string
-		text  string    // texto formatado esperado dentro da saída
-		color ColorAnsi // cor de foreground esperada
+		text  string
+		color tint.ColorAnsi
 	}{
-		{"PresetTitle", PresetTitle, "título", "=== título ===", Cyan},
-		{"PresetSubtitle", PresetSubtitle, "subtítulo", "--- subtítulo ---", White},
-		{"PresetSuccess", PresetSuccess, "sucesso", "✔ sucesso", Green},
-		{"PresetError", PresetError, "erro", "✖ erro", Red},
-		{"PresetWarning", PresetWarning, "aviso", "⚠ aviso", Yellow},
-		{"PresetInfo", PresetInfo, "info", "ℹ info", Blue},
-		{"PresetLambda", PresetLambda, "lambda", "λ lambda", Magenta},
+		{"Title", Title, "título", "=== título ===", tint.Cyan},
+		{"Subtitle", Subtitle, "subtítulo", "--- subtítulo ---", tint.White},
+		{"Success", Success, "sucesso", "✔ sucesso", tint.Green},
+		{"Error", Error, "erro", "✖ erro", tint.Red},
+		{"Warning", Warning, "aviso", "⚠ aviso", tint.Yellow},
+		{"Info", Info, "info", "ℹ info", tint.Blue},
+		{"Lambda", Lambda, "lambda", "λ lambda", tint.Magenta},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			withColorSupport(t, ColorSupport4bit, func() {
+			withColorSupport(t, tint.ColorSupport4bit, func() {
 				got := tt.fn(tt.msg)
 
 				if !strings.Contains(got, tt.text) {
@@ -81,18 +95,18 @@ func TestPresets_SaidaExata(t *testing.T) {
 		fn   func(string) string
 		want string
 	}{
-		{"PresetTitle", PresetTitle, "\033[0m\033[1m\033[36m=== x ===\033[0m"},
-		{"PresetSubtitle", PresetSubtitle, "\033[0m\033[1m\033[37m--- x ---\033[0m"},
-		{"PresetSuccess", PresetSuccess, "\033[0m\033[1m\033[32m✔ x\033[0m"},
-		{"PresetError", PresetError, "\033[0m\033[1m\033[31m✖ x\033[0m"},
-		{"PresetWarning", PresetWarning, "\033[0m\033[1m\033[33m⚠ x\033[0m"},
-		{"PresetInfo", PresetInfo, "\033[0m\033[1m\033[34mℹ x\033[0m"},
-		{"PresetLambda", PresetLambda, "\033[0m\033[1m\033[35mλ x\033[0m"},
+		{"Title", Title, "\033[0m\033[1m\033[36m=== x ===\033[0m"},
+		{"Subtitle", Subtitle, "\033[0m\033[1m\033[37m--- x ---\033[0m"},
+		{"Success", Success, "\033[0m\033[1m\033[32m✔ x\033[0m"},
+		{"Error", Error, "\033[0m\033[1m\033[31m✖ x\033[0m"},
+		{"Warning", Warning, "\033[0m\033[1m\033[33m⚠ x\033[0m"},
+		{"Info", Info, "\033[0m\033[1m\033[34mℹ x\033[0m"},
+		{"Lambda", Lambda, "\033[0m\033[1m\033[35mλ x\033[0m"},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			withColorSupport(t, ColorSupport4bit, func() {
+			withColorSupport(t, tint.ColorSupport4bit, func() {
 				got := tt.fn("x")
 				if got != tt.want {
 					t.Errorf("%s(\"x\") = %q, want %q", tt.name, got, tt.want)
@@ -108,18 +122,18 @@ func TestPresets_MensagemVazia(t *testing.T) {
 		fn   func(string) string
 		want string
 	}{
-		{"PresetTitle", PresetTitle, "===  ==="},
-		{"PresetSubtitle", PresetSubtitle, "---  ---"},
-		{"PresetSuccess", PresetSuccess, "✔ "},
-		{"PresetError", PresetError, "✖ "},
-		{"PresetWarning", PresetWarning, "⚠ "},
-		{"PresetInfo", PresetInfo, "ℹ "},
-		{"PresetLambda", PresetLambda, "λ "},
+		{"Title", Title, "===  ==="},
+		{"Subtitle", Subtitle, "---  ---"},
+		{"Success", Success, "✔ "},
+		{"Error", Error, "✖ "},
+		{"Warning", Warning, "⚠ "},
+		{"Info", Info, "ℹ "},
+		{"Lambda", Lambda, "λ "},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			withColorSupport(t, ColorSupportNone, func() {
+			withColorSupport(t, tint.ColorSupportNone, func() {
 				got := tt.fn("")
 				if got != tt.want {
 					t.Errorf("%s(\"\") = %q, want %q", tt.name, got, tt.want)
@@ -129,7 +143,7 @@ func TestPresets_MensagemVazia(t *testing.T) {
 	}
 }
 
-func TestPresets_CaractereEspeciais(t *testing.T) {
+func TestPresets_CaracteresEspeciais(t *testing.T) {
 	messages := []struct {
 		name string
 		text string
@@ -145,19 +159,19 @@ func TestPresets_CaractereEspeciais(t *testing.T) {
 		name string
 		fn   func(string) string
 	}{
-		{"PresetTitle", PresetTitle},
-		{"PresetSubtitle", PresetSubtitle},
-		{"PresetSuccess", PresetSuccess},
-		{"PresetError", PresetError},
-		{"PresetWarning", PresetWarning},
-		{"PresetInfo", PresetInfo},
-		{"PresetLambda", PresetLambda},
+		{"Title", Title},
+		{"Subtitle", Subtitle},
+		{"Success", Success},
+		{"Error", Error},
+		{"Warning", Warning},
+		{"Info", Info},
+		{"Lambda", Lambda},
 	}
 
 	for _, msg := range messages {
 		for _, preset := range presets {
 			t.Run(preset.name+"/"+msg.name, func(t *testing.T) {
-				withColorSupport(t, ColorSupportNone, func() {
+				withColorSupport(t, tint.ColorSupportNone, func() {
 					got := preset.fn(msg.text)
 					if !strings.Contains(got, msg.text) {
 						t.Errorf("%s(%q) não preservou a mensagem, got %q", preset.name, msg.text, got)
