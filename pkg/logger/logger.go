@@ -61,6 +61,15 @@ func New(file *os.File) *Logger {
 	return &Logger{file: file}
 }
 
+func NewWithTemporaryFile(appName string) (*Logger, error) {
+	fileName := fmt.Sprintf("%s-log-*", appName)
+	logFile, err := os.CreateTemp("", fileName)
+	if err != nil {
+		return nil, err
+	}
+	return New(logFile), nil
+}
+
 func (l *Logger) Trace(message string, metadata ...Metadata) {
 	l.Log(LogLevelTrace, message, metadata...)
 }
@@ -83,6 +92,12 @@ func (l *Logger) Error(message string, metadata ...Metadata) {
 
 func (l *Logger) Fatal(message string, metadata ...Metadata) {
 	l.Log(LogLevelFatal, message, metadata...)
+}
+
+func (l *Logger) RecoverPanic() {
+	if r := recover(); r != nil {
+		l.Fatal(fmt.Sprintf("Panic recovered: %v", r))
+	}
 }
 
 func (l *Logger) Close() {
