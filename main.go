@@ -1,6 +1,8 @@
 package main
 
 import (
+	_ "embed"
+
 	"github.com/maycon-jesus/mj-cli/cmd"
 	"github.com/maycon-jesus/mj-cli/internal/commands"
 	"github.com/maycon-jesus/mj-cli/internal/config"
@@ -8,8 +10,16 @@ import (
 	"github.com/maycon-jesus/mj-cli/pkg/logger"
 )
 
+//go:embed VERSION
+var appVersion string
+var appName = "mj-cli"
+
 func main() {
 	log, err := logger.NewWithTemporaryFile("mj-cli")
+	log = log.WithAttrs(logger.Metadata{
+		"app":     appName,
+		"version": appVersion,
+	})
 	if err != nil {
 		panic(err)
 	}
