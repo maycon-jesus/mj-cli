@@ -97,7 +97,6 @@ func New() *Terminal {
 							i++
 						case <-s.stop:
 							s.ticker.Stop()
-							term.addEvent(printMsg{content: "\r\033[K"})
 							return
 						}
 					}
@@ -114,7 +113,7 @@ func New() *Terminal {
 				} else {
 					finalMsg = fmt.Sprintf("\r\033[K\033[32m✓\033[0m %s\n", e.message)
 				}
-				term.addEvent(printMsg{content: finalMsg})
+				fmt.Print(finalMsg)
 			case closeMsg:
 				if term.spinner != nil {
 					close(term.spinner.stop)
