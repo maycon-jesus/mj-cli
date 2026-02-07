@@ -4,6 +4,7 @@ import (
 	"os"
 
 	"github.com/maycon-jesus/mj-cli/cmd"
+	"github.com/maycon-jesus/mj-cli/internal/commands"
 	"github.com/maycon-jesus/mj-cli/internal/config"
 	"github.com/maycon-jesus/mj-cli/pkg/intl"
 	"github.com/maycon-jesus/mj-cli/pkg/logger"
@@ -22,7 +23,7 @@ func main() {
 
 	translator := intl.NewTranslator(newViperAdapter.GetString("lang"))
 
-	app := &cmd.App{
+	app := &commands.App{
 		Logger:     log,
 		Config:     configRegistry,
 		Translator: translator,
