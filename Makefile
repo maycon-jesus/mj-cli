@@ -4,10 +4,10 @@ BUILD_DIR=build
 MAIN_FILE=main.go
 
 # Versão (pode ser sobrescrita via variável de ambiente)
-VERSION?=dev
+VERSION?=$(shell cat VERSION)
 
 # Flags de build
-LDFLAGS=-ldflags "-s -w -X main.Version=$(VERSION)"
+LDFLAGS=-trimpath -ldflags "-s -w -X main.Version=$(VERSION)"
 
 .PHONY: all build build-linux build-windows test clean
 
