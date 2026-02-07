@@ -3,8 +3,10 @@ package logger
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"maps"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -18,7 +20,9 @@ const (
 )
 
 type Logger struct {
-	file *os.File
+	file   io.WriteCloser
+	attrs  Metadata
+	groups []string
 }
 
 type Metadata = map[string]interface{}
@@ -46,28 +50,34 @@ func (l *Logger) Log(level int, message string, metadata ...Metadata) {
 	data := make(Metadata)
 	data["level"] = getLevelString(level)
 	data["message"] = message
-	data["timestamp"] = time.Now().Format("2006-01-02T15:04:05Z07:00")
+	data["time"] = time.Now().Format("2006-01-02T15:04:05Z07:00")
 
+	maps.Copy(data, l.attrs)
+	namespace := l.getNamespace()
 	for _, meta := range metadata {
-		maps.Copy(data, meta)
+		for key, value := range meta {
+			data[namespace+key] = value
+		}
 	}
 
 	jsonData, _ := json.Marshal(data)
-	l.file.WriteString(string(jsonData) + "\n")
-	fmt.Println(string(jsonData))
+	jsonData = append(jsonData, '\n')
+	l.file.Write(jsonData)
+	fmt.Print(string(jsonData))
 }
 
-func New(file *os.File) *Logger {
-	return &Logger{file: file}
+func New(writer io.WriteCloser) *Logger {
+	return &Logger{file: writer, attrs: make(Metadata), groups: []string{}}
 }
 
 func NewWithTemporaryFile(appName string) (*Logger, error) {
 	fileName := fmt.Sprintf("%s-log-*", appName)
 	logFile, err := os.CreateTemp("", fileName)
+	fileWriter := NewFileWriter(logFile)
 	if err != nil {
 		return nil, err
 	}
-	return New(logFile), nil
+	return New(fileWriter), nil
 }
 
 func (l *Logger) Trace(message string, metadata ...Metadata) {
@@ -98,6 +108,38 @@ func (l *Logger) RecoverPanic() {
 	if r := recover(); r != nil {
 		l.Fatal(fmt.Sprintf("Panic recovered: %v", r))
 	}
+}
+
+func (l *Logger) getNamespace() string {
+	strBuilder := strings.Builder{}
+	for _, group := range l.groups {
+		strBuilder.WriteString(group)
+		strBuilder.WriteString(".")
+	}
+	return strBuilder.String()
+}
+
+func (l *Logger) WithAttrs(attrs Metadata) *Logger {
+	newLogger := &Logger{
+		file:   l.file,
+		attrs:  maps.Clone(l.attrs),
+		groups: append([]string{}, l.groups...),
+	}
+
+	namespace := newLogger.getNamespace()
+	for key, value := range attrs {
+		newLogger.attrs[namespace+key] = value
+	}
+	return newLogger
+}
+
+func (l *Logger) WithGroup(group string) *Logger {
+	newLogger := &Logger{
+		file:   l.file,
+		attrs:  maps.Clone(l.attrs),
+		groups: append(append([]string{}, l.groups...), group),
+	}
+	return newLogger
 }
 
 func (l *Logger) Close() {
