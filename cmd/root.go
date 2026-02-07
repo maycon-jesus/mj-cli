@@ -8,14 +8,14 @@ import (
 	alias_cmd "github.com/maycon-jesus/mj-cli/internal/commands_repository/alias"
 	config_cmd "github.com/maycon-jesus/mj-cli/internal/commands_repository/config"
 	branch_cmd "github.com/maycon-jesus/mj-cli/internal/commands_repository/git"
-	"github.com/maycon-jesus/mj-cli/internal/config"
-	"github.com/maycon-jesus/mj-cli/pkg/intl"
+	"github.com/maycon-jesus/mj-cli/pkg/logger"
 )
 
 // Execute executa o comando raiz
-func Execute(configRegistry *config.ConfigRegistry, translator *intl.Translator) {
+func Execute(app *commands.App) {
+	app.Logger.Trace("Executing root command", logger.Metadata{"event": "execute_root_command"})
 	root := commandsrepository.NewRootCommand()
-	rootCmd := root.ToCobraCommand(configRegistry, translator)
+	rootCmd := root.ToCobraCommand(app)
 
 	// Cria o registro de comandos
 	registry := commands.NewRegistry()
@@ -28,7 +28,7 @@ func Execute(configRegistry *config.ConfigRegistry, translator *intl.Translator)
 	)
 
 	// Anexa todos os comandos ao rootCmd
-	registry.AttachToRoot(rootCmd, configRegistry, translator)
+	registry.AttachToRoot(rootCmd, app)
 
 	err := rootCmd.Execute()
 	if err != nil {

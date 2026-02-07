@@ -5,6 +5,7 @@ import (
 
 	"github.com/maycon-jesus/mj-cli/internal/config"
 	"github.com/maycon-jesus/mj-cli/pkg/intl"
+	"github.com/maycon-jesus/mj-cli/pkg/logger"
 	"github.com/maycon-jesus/mj-cli/pkg/mjterm"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -72,17 +73,17 @@ type ExecData struct {
 	Terminal   *mjterm.Terminal
 }
 
-func (c *Command) ToCobraCommand(config *config.ConfigRegistry, translator *intl.Translator) *cobra.Command {
-
+func (c *Command) ToCobraCommand(app *App) *cobra.Command {
+	app.Logger.Trace("Converting custom command to Cobra command", logger.Metadata{"command": c.Name, "event": "convert_command_to_cobra"})
 	// Adiciona traduções ao tradutor
-	translator.AddMessagesBulk(c.Translations)
+	app.Translator.AddMessagesBulk(c.Translations)
 
 	// Cria o comando cobra
 	cmd := &cobra.Command{
 		Use:     makeUseString(c.Name, c.Args),
-		Short:   translator.T(c.ShortDescriptionKey, nil),
-		Long:    translator.T(c.LongDescriptionKey, nil),
-		Example: translator.T(c.ExampleKey, nil),
+		Short:   app.Translator.T(c.ShortDescriptionKey, nil),
+		Long:    app.Translator.T(c.LongDescriptionKey, nil),
+		Example: app.Translator.T(c.ExampleKey, nil),
 		Aliases: c.Aliases,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
@@ -91,8 +92,8 @@ func (c *Command) ToCobraCommand(config *config.ConfigRegistry, translator *intl
 				data := &ExecData{
 					Args:       args,
 					Flags:      cmd.Flags(),
-					Config:     config,
-					Translator: translator,
+					Config:     app.Config,
+					Translator: app.Translator,
 					Terminal:   mjterm.New(),
 				}
 
@@ -115,8 +116,8 @@ func (c *Command) ToCobraCommand(config *config.ConfigRegistry, translator *intl
 				data := &ExecData{
 					Args:       args,
 					Flags:      cmd.Flags(),
-					Config:     config,
-					Translator: translator,
+					Config:     app.Config,
+					Translator: app.Translator,
 					Terminal:   mjterm.New(),
 				}
 				err := c.Handler(ctx, data)
@@ -132,8 +133,8 @@ func (c *Command) ToCobraCommand(config *config.ConfigRegistry, translator *intl
 				data := &ExecData{
 					Args:       args,
 					Flags:      cmd.Flags(),
-					Config:     config,
-					Translator: translator,
+					Config:     app.Config,
+					Translator: app.Translator,
 					Terminal:   mjterm.New(),
 				}
 				err := c.AfterRun(ctx, data)
@@ -146,12 +147,12 @@ func (c *Command) ToCobraCommand(config *config.ConfigRegistry, translator *intl
 
 	// Adiciona as flags
 	for _, flag := range c.Flags {
-		c.addFlag(translator, config, cmd, flag)
+		c.addFlag(app.Translator, app.Config, cmd, flag)
 	}
 
 	// Adiciona subcomandos recursivamente
 	for _, subCmd := range c.SubCommands {
-		cmd.AddCommand(subCmd.ToCobraCommand(config, translator))
+		cmd.AddCommand(subCmd.ToCobraCommand(app))
 	}
 
 	return cmd
