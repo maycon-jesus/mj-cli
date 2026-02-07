@@ -1,8 +1,6 @@
 package main
 
 import (
-	"os"
-
 	"github.com/maycon-jesus/mj-cli/cmd"
 	"github.com/maycon-jesus/mj-cli/internal/commands"
 	"github.com/maycon-jesus/mj-cli/internal/config"
@@ -11,8 +9,12 @@ import (
 )
 
 func main() {
-	logFile, _ := os.CreateTemp("", "mj-cli-log-*.json")
-	log := logger.New(logFile)
+	log, err := logger.NewWithTemporaryFile("mj-cli")
+	if err != nil {
+		panic(err)
+	}
+	defer log.Close()
+	defer log.RecoverPanic()
 
 	newViperAdapter := config.NewViperAdapter("mj-cli")
 	newViperAdapter.SetEnvPrefix("MJ_CLI")
@@ -31,7 +33,7 @@ func main() {
 
 	cmd.Execute(app)
 
-	err := newViperAdapter.WriteConfig()
+	err = newViperAdapter.WriteConfig()
 	if err != nil {
 		panic(err)
 	}
