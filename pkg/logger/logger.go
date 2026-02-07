@@ -6,6 +6,7 @@ import (
 	"io"
 	"maps"
 	"os"
+	"runtime"
 	"strings"
 	"time"
 )
@@ -51,6 +52,11 @@ func (l *Logger) Log(level int, message string, metadata ...Metadata) {
 	data["level"] = getLevelString(level)
 	data["message"] = message
 	data["time"] = time.Now().Format("2006-01-02T15:04:05Z07:00")
+
+	_, file, line, ok := runtime.Caller(2)
+	if ok {
+		data["caller"] = fmt.Sprintf("%s:%d", file, line)
+	}
 
 	maps.Copy(data, l.attrs)
 	namespace := l.getNamespace()
