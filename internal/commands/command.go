@@ -74,7 +74,7 @@ type ExecData struct {
 }
 
 func (c *Command) ToCobraCommand(app *App) *cobra.Command {
-	app.Logger.Trace("Converting custom command to Cobra command", logger.Metadata{"command": c.Name, "event": "convert_command_to_cobra"})
+	app.Logger.Debug("Converting custom command to Cobra command", logger.Metadata{"command": c.Name, "event": "convert_command_to_cobra"})
 	// Adiciona traduções ao tradutor
 	app.Translator.AddMessagesBulk(c.Translations)
 
@@ -147,7 +147,7 @@ func (c *Command) ToCobraCommand(app *App) *cobra.Command {
 
 	// Adiciona as flags
 	for _, flag := range c.Flags {
-		c.addFlag(app.Translator, app.Config, cmd, flag)
+		c.addFlag(app, cmd, flag)
 	}
 
 	// Adiciona subcomandos recursivamente
@@ -171,19 +171,19 @@ func makeUseString(name string, args []Arg) string {
 }
 
 // addFlag adiciona uma flag ao comando cobra baseado no tipo
-func (c *Command) addFlag(translator *intl.Translator, config *config.ConfigRegistry, cmd *cobra.Command, flag Flag) {
+func (c *Command) addFlag(app *App, cmd *cobra.Command, flag Flag) {
 	switch v := flag.DefaultValue.(type) {
 	case string:
-		cmd.Flags().StringP(flag.Name, flag.Shorthand, v, translator.T(flag.DescriptionKey, nil))
+		cmd.Flags().StringP(flag.Name, flag.Shorthand, v, app.Translator.T(flag.DescriptionKey, nil))
 	case int:
-		cmd.Flags().IntP(flag.Name, flag.Shorthand, v, translator.T(flag.DescriptionKey, nil))
+		cmd.Flags().IntP(flag.Name, flag.Shorthand, v, app.Translator.T(flag.DescriptionKey, nil))
 	case bool:
-		cmd.Flags().BoolP(flag.Name, flag.Shorthand, v, translator.T(flag.DescriptionKey, nil))
+		cmd.Flags().BoolP(flag.Name, flag.Shorthand, v, app.Translator.T(flag.DescriptionKey, nil))
 	case []string:
-		cmd.Flags().StringSliceP(flag.Name, flag.Shorthand, v, translator.T(flag.DescriptionKey, nil))
+		cmd.Flags().StringSliceP(flag.Name, flag.Shorthand, v, app.Translator.T(flag.DescriptionKey, nil))
 	}
 	if flag.ConfigRegistry != (FlagConfigRegistry{}) {
-		config.GetModule(flag.ConfigRegistry.RegistryName).BindPFlag(flag.ConfigRegistry.Key, cmd.Flags().Lookup(flag.Name))
+		app.Config.GetModule(flag.ConfigRegistry.RegistryName).BindPFlag(flag.ConfigRegistry.Key, cmd.Flags().Lookup(flag.Name))
 	}
 
 	if flag.Required {
