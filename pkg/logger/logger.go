@@ -8,56 +8,66 @@ import (
 	"os"
 	"runtime"
 	"strings"
+	"sync"
 	"time"
 )
 
+type LogLevel int
+
 const (
-	LogLevelTrace = 1 + iota
+	LogLevelTrace LogLevel = iota + 1
 	LogLevelDebug
 	LogLevelInfo
 	LogLevelWarn
 	LogLevelError
-	LogLevelFatal
+	LogLevelNone
 )
 
-type Logger struct {
-	file        io.WriteCloser
-	attrs       Metadata
-	groups      []string
-	printStdout bool
+type FileInfoWriter interface {
+	io.WriteCloser
+	Name() string
 }
 
 type Metadata = map[string]interface{}
 
-func getLevelString(level int) string {
-	switch level {
-	case LogLevelTrace:
-		return "TRACE"
-	case LogLevelDebug:
-		return "DEBUG"
-	case LogLevelInfo:
-		return "INFO"
-	case LogLevelWarn:
-		return "WARN"
-	case LogLevelError:
-		return "ERROR"
-	case LogLevelFatal:
-		return "FATAL"
-	default:
-		return "UNKNOWN"
+type Logger struct {
+	file         FileInfoWriter
+	attrs        Metadata
+	groups       []string
+	fileLevel    LogLevel
+	consoleLevel LogLevel
+	mu           *sync.Mutex
+	stdout       io.Writer
+	closeOnce    *sync.Once
+}
+
+func New(file FileInfoWriter, defaultStdout io.Writer) *Logger {
+	return &Logger{
+		file:         file,
+		attrs:        make(Metadata),
+		groups:       []string{},
+		fileLevel:    LogLevelTrace,
+		consoleLevel: LogLevelNone,
+		mu:           &sync.Mutex{},
+		stdout:       defaultStdout,
+		closeOnce:    &sync.Once{},
 	}
 }
 
-func (l *Logger) Log(level int, message string, metadata ...Metadata) {
-	data := make(Metadata)
-	data["level"] = getLevelString(level)
-	data["message"] = message
-	data["time"] = time.Now().Format("2006-01-02T15:04:05Z07:00")
-
-	_, file, line, ok := runtime.Caller(2)
-	if ok {
-		data["caller"] = fmt.Sprintf("%s:%d", file, line)
+func NewWithTemporaryFile(appName string, defaultStdout io.Writer) (*Logger, error) {
+	fileName := fmt.Sprintf("%s-log-*", appName)
+	logFile, err := os.CreateTemp("", fileName)
+	if err != nil {
+		return nil, err
 	}
+	return New(logFile, defaultStdout), nil
+}
+
+func (l *Logger) log(level LogLevel, message string, metadata ...Metadata) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	data := make(Metadata)
 
 	maps.Copy(data, l.attrs)
 	namespace := l.getNamespace()
@@ -67,55 +77,62 @@ func (l *Logger) Log(level int, message string, metadata ...Metadata) {
 		}
 	}
 
-	jsonData, _ := json.Marshal(data)
-	jsonData = append(jsonData, '\n')
-	l.file.Write(jsonData)
-	if l.printStdout {
-		fmt.Print(string(jsonData))
-	}
-}
-
-func New(writer io.WriteCloser) *Logger {
-	return &Logger{file: writer, attrs: make(Metadata), groups: []string{}}
-}
-
-func NewWithTemporaryFile(appName string) (*Logger, error) {
-	fileName := fmt.Sprintf("%s-log-*", appName)
-	logFile, err := os.CreateTemp("", fileName)
-	fileWriter := NewFileWriter(logFile)
+	// Dados internos do logger
+	levelString, err := getLevelString(level)
 	if err != nil {
-		return nil, err
+		fmt.Fprintf(l.stdout, "Invalid log level: %v\n", err)
+		return
 	}
-	return New(fileWriter), nil
+	data["level"] = levelString
+	data["message"] = message
+	data["time"] = time.Now().UTC().Format("2006-01-02T15:04:05Z07:00")
+
+	_, file, line, ok := runtime.Caller(2)
+	if ok {
+		data["caller"] = fmt.Sprintf("%s:%d", file, line)
+	}
+
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		fmt.Fprintf(l.stdout, "Failed to marshal log metadata: %v\n", err)
+		return
+	}
+	jsonData = append(jsonData, '\n')
+
+	if level >= l.fileLevel {
+		_, err := l.file.Write(jsonData)
+		if err != nil {
+			fmt.Fprintf(l.stdout, "Failed to write log to file: %v\n", err)
+		}
+	}
+	if level >= l.consoleLevel {
+		l.stdout.Write(jsonData)
+	}
 }
 
 func (l *Logger) Trace(message string, metadata ...Metadata) {
-	l.Log(LogLevelTrace, message, metadata...)
+	l.log(LogLevelTrace, message, metadata...)
 }
 
 func (l *Logger) Debug(message string, metadata ...Metadata) {
-	l.Log(LogLevelDebug, message, metadata...)
+	l.log(LogLevelDebug, message, metadata...)
 }
 
 func (l *Logger) Info(message string, metadata ...Metadata) {
-	l.Log(LogLevelInfo, message, metadata...)
+	l.log(LogLevelInfo, message, metadata...)
 }
 
 func (l *Logger) Warn(message string, metadata ...Metadata) {
-	l.Log(LogLevelWarn, message, metadata...)
+	l.log(LogLevelWarn, message, metadata...)
 }
 
 func (l *Logger) Error(message string, metadata ...Metadata) {
-	l.Log(LogLevelError, message, metadata...)
-}
-
-func (l *Logger) Fatal(message string, metadata ...Metadata) {
-	l.Log(LogLevelFatal, message, metadata...)
+	l.log(LogLevelError, message, metadata...)
 }
 
 func (l *Logger) RecoverPanic() {
 	if r := recover(); r != nil {
-		l.Fatal(fmt.Sprintf("Panic recovered: %v", r))
+		l.Error(fmt.Sprintf("Panic recovered: %v", r))
 	}
 }
 
@@ -129,10 +146,18 @@ func (l *Logger) getNamespace() string {
 }
 
 func (l *Logger) WithAttrs(attrs Metadata) *Logger {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
 	newLogger := &Logger{
-		file:   l.file,
-		attrs:  maps.Clone(l.attrs),
-		groups: append([]string{}, l.groups...),
+		file:         l.file,
+		attrs:        maps.Clone(l.attrs),
+		groups:       append([]string{}, l.groups...),
+		fileLevel:    l.fileLevel,
+		consoleLevel: l.consoleLevel,
+		mu:           l.mu,
+		stdout:       l.stdout,
+		closeOnce:    l.closeOnce,
 	}
 
 	namespace := newLogger.getNamespace()
@@ -143,18 +168,49 @@ func (l *Logger) WithAttrs(attrs Metadata) *Logger {
 }
 
 func (l *Logger) WithGroup(group string) *Logger {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
 	newLogger := &Logger{
-		file:   l.file,
-		attrs:  maps.Clone(l.attrs),
-		groups: append(append([]string{}, l.groups...), group),
+		file:         l.file,
+		attrs:        maps.Clone(l.attrs),
+		groups:       append(append([]string{}, l.groups...), group),
+		fileLevel:    l.fileLevel,
+		consoleLevel: l.consoleLevel,
+		mu:           l.mu,
+		stdout:       l.stdout,
+		closeOnce:    l.closeOnce,
 	}
 	return newLogger
 }
 
-func (l *Logger) TogglePrintStdout(enabled bool) {
-	l.printStdout = enabled
+func (l *Logger) SetFileLevel(level string) error {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	levelInt, err := getLevelInt(level)
+	if err != nil {
+		return err
+	}
+	l.fileLevel = levelInt
+	return nil
+}
+func (l *Logger) SetConsoleLevel(level string) error {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	levelInt, err := getLevelInt(level)
+	if err != nil {
+		return err
+	}
+	l.consoleLevel = levelInt
+	return nil
+}
+
+func (l *Logger) Name() string {
+	return l.file.Name()
 }
 
 func (l *Logger) Close() {
-	l.file.Close()
+	l.closeOnce.Do(func() {
+		l.file.Close()
+	})
 }

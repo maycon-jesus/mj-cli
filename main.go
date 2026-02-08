@@ -9,6 +9,7 @@ import (
 	"github.com/maycon-jesus/mj-cli/internal/config"
 	"github.com/maycon-jesus/mj-cli/pkg/intl"
 	"github.com/maycon-jesus/mj-cli/pkg/logger"
+	"github.com/maycon-jesus/mj-cli/pkg/mjterm"
 )
 
 //go:embed VERSION
@@ -16,20 +17,29 @@ var appVersion string
 var appName = "mj-cli"
 
 func main() {
-	log, err := logger.NewWithTemporaryFile("mj-cli")
+	term := mjterm.New()
+	defer term.Close()
+
+	log, err := logger.NewWithTemporaryFile("mj-cli", term)
+	if err != nil {
+		panic(err)
+	}
 	log = log.WithAttrs(logger.Metadata{
 		"app":     appName,
 		"version": appVersion,
 	})
-	if err != nil {
-		panic(err)
-	}
+
 	defer log.Close()
 	defer log.RecoverPanic()
 
-	deugEnv := os.Getenv("DEBUG")
-	if deugEnv == "true" || deugEnv == "1" {
-		log.TogglePrintStdout(true)
+	debugEnv := os.Getenv("DEBUG")
+	if debugEnv != "" {
+		err := log.SetConsoleLevel(debugEnv)
+		if err != nil {
+			log.Warn("Valor inválido para DEBUG, usando nível padrão", logger.Metadata{"DEBUG": debugEnv})
+		} else {
+			log.Debug("Nível de log definido por variável de ambiente", logger.Metadata{"DEBUG": debugEnv})
+		}
 	}
 
 	log.Info("Iniciando aplicação")
@@ -54,6 +64,7 @@ func main() {
 		Logger:     log,
 		Config:     configRegistry,
 		Translator: translator,
+		Terminal:   term,
 	}
 
 	cmd.Execute(app)

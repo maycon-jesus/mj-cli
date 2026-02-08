@@ -96,12 +96,15 @@ func (c *Command) ToCobraCommand(app *App) *cobra.Command {
 					Flags:      cmd.Flags(),
 					Config:     app.Config,
 					Translator: app.Translator,
-					Terminal:   mjterm.New(),
+					Terminal:   app.Terminal,
 					Logger:     app.Logger,
 				}
 
 				err := c.BeforeRun(ctx, data)
-				data.Terminal.Close()
+				if err != nil {
+					logPath := app.Logger.Name()
+					data.Terminal.Printf("Error occurred. Check log file at: %s\n", logPath)
+				}
 				return err
 			}
 			return nil
@@ -121,11 +124,14 @@ func (c *Command) ToCobraCommand(app *App) *cobra.Command {
 					Flags:      cmd.Flags(),
 					Config:     app.Config,
 					Translator: app.Translator,
-					Terminal:   mjterm.New(),
+					Terminal:   app.Terminal,
 					Logger:     app.Logger,
 				}
 				err := c.Handler(ctx, data)
-				data.Terminal.Close()
+				if err != nil {
+					logPath := app.Logger.Name()
+					data.Terminal.Printf("Error occurred. Check log file at: %s\n", logPath)
+				}
 				return err
 			}
 
@@ -139,11 +145,14 @@ func (c *Command) ToCobraCommand(app *App) *cobra.Command {
 					Flags:      cmd.Flags(),
 					Config:     app.Config,
 					Translator: app.Translator,
-					Terminal:   mjterm.New(),
+					Terminal:   app.Terminal,
 					Logger:     app.Logger,
 				}
 				err := c.AfterRun(ctx, data)
-				data.Terminal.Close()
+				if err != nil {
+					logPath := app.Logger.Name()
+					data.Terminal.Printf("Error occurred. Check log file at: %s\n", logPath)
+				}
 				return err
 			}
 			return nil
