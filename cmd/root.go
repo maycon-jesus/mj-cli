@@ -13,7 +13,8 @@ import (
 
 // Execute executa o comando raiz
 func Execute(app *commands.App) {
-	app.Logger.Trace("Executing root command", logger.Metadata{"event": "execute_root_command"})
+	app.Logger.Debug("Executando comando raiz", logger.Metadata{"event": "execute_root_command"})
+
 	root := commandsrepository.NewRootCommand()
 	rootCmd := root.ToCobraCommand(app)
 
