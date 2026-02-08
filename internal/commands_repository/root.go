@@ -14,9 +14,11 @@ func NewRootCommand() *commands.Command {
 		Translations: intl.Translations{
 			"en": {
 				"command.root.short_description": "MJ CLI - A command line tool",
+				"command.root.long_description":  "MJ CLI is a powerful command line interface tool to interact with MJ services.",
 			},
 			"pt-BR": {
 				"command.root.short_description": "MJ CLI - Uma ferramenta de linha de comando",
+				"command.root.long_description":  "MJ CLI é uma poderosa ferramenta de linha de comando para interagir com os serviços MJ.",
 			},
 		},
 	}
