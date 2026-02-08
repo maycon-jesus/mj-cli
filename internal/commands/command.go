@@ -51,6 +51,7 @@ type Flag struct {
 	DescriptionKey string
 	DefaultValue   interface{}
 	Required       bool
+	Global         bool
 	ConfigRegistry FlagConfigRegistry
 }
 
@@ -71,6 +72,7 @@ type ExecData struct {
 	Config     *config.ConfigRegistry
 	Translator *intl.Translator
 	Terminal   *mjterm.Terminal
+	Logger     *logger.Logger
 }
 
 func (c *Command) ToCobraCommand(app *App) *cobra.Command {
@@ -95,6 +97,7 @@ func (c *Command) ToCobraCommand(app *App) *cobra.Command {
 					Config:     app.Config,
 					Translator: app.Translator,
 					Terminal:   mjterm.New(),
+					Logger:     app.Logger,
 				}
 
 				err := c.BeforeRun(ctx, data)
@@ -119,6 +122,7 @@ func (c *Command) ToCobraCommand(app *App) *cobra.Command {
 					Config:     app.Config,
 					Translator: app.Translator,
 					Terminal:   mjterm.New(),
+					Logger:     app.Logger,
 				}
 				err := c.Handler(ctx, data)
 				data.Terminal.Close()
@@ -136,6 +140,7 @@ func (c *Command) ToCobraCommand(app *App) *cobra.Command {
 					Config:     app.Config,
 					Translator: app.Translator,
 					Terminal:   mjterm.New(),
+					Logger:     app.Logger,
 				}
 				err := c.AfterRun(ctx, data)
 				data.Terminal.Close()
@@ -172,18 +177,22 @@ func makeUseString(name string, args []Arg) string {
 
 // addFlag adiciona uma flag ao comando cobra baseado no tipo
 func (c *Command) addFlag(app *App, cmd *cobra.Command, flag Flag) {
+	flags := cmd.Flags()
+	if flag.Global {
+		flags = cmd.PersistentFlags()
+	}
 	switch v := flag.DefaultValue.(type) {
 	case string:
-		cmd.Flags().StringP(flag.Name, flag.Shorthand, v, app.Translator.T(flag.DescriptionKey, nil))
+		flags.StringP(flag.Name, flag.Shorthand, v, app.Translator.T(flag.DescriptionKey, nil))
 	case int:
-		cmd.Flags().IntP(flag.Name, flag.Shorthand, v, app.Translator.T(flag.DescriptionKey, nil))
+		flags.IntP(flag.Name, flag.Shorthand, v, app.Translator.T(flag.DescriptionKey, nil))
 	case bool:
-		cmd.Flags().BoolP(flag.Name, flag.Shorthand, v, app.Translator.T(flag.DescriptionKey, nil))
+		flags.BoolP(flag.Name, flag.Shorthand, v, app.Translator.T(flag.DescriptionKey, nil))
 	case []string:
-		cmd.Flags().StringSliceP(flag.Name, flag.Shorthand, v, app.Translator.T(flag.DescriptionKey, nil))
+		flags.StringSliceP(flag.Name, flag.Shorthand, v, app.Translator.T(flag.DescriptionKey, nil))
 	}
 	if flag.ConfigRegistry != (FlagConfigRegistry{}) {
-		app.Config.GetModule(flag.ConfigRegistry.RegistryName).BindPFlag(flag.ConfigRegistry.Key, cmd.Flags().Lookup(flag.Name))
+		app.Config.GetModule(flag.ConfigRegistry.RegistryName).BindPFlag(flag.ConfigRegistry.Key, flags.Lookup(flag.Name))
 	}
 
 	if flag.Required {

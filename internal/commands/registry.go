@@ -34,7 +34,7 @@ func (r *Registry) GetCommands() []*Command {
 
 // AttachToRoot adiciona todos os comandos registrados a um comando raiz do Cobra
 func (r *Registry) AttachToRoot(rootCmd *cobra.Command, app *App) {
-	app.Logger.Trace("Attaching commands to root command", logger.Metadata{"event": "attach_commands_to_root"})
+	app.Logger.Debug("Attaching commands to root command", logger.Metadata{"event": "attach_commands_to_root"})
 	for _, cmd := range r.commands {
 		rootCmd.AddCommand(cmd.ToCobraCommand(app))
 	}
