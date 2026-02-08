@@ -8,7 +8,10 @@
             "mode": "auto",
             "program": "${workspaceFolder}",
             "args": [],
-            "cwd": "${workspaceFolder}"
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "DEBUG": "1"
+            }
         },
         {
             "name": "Debug CLI (com args)",
@@ -19,7 +22,10 @@
             "args": [
                 "${input:cliArgs}"
             ],
-            "cwd": "${workspaceFolder}"
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "DEBUG": "1"
+            }
         }
     ],
     "inputs": [
