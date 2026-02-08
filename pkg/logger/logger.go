@@ -21,9 +21,10 @@ const (
 )
 
 type Logger struct {
-	file   io.WriteCloser
-	attrs  Metadata
-	groups []string
+	file        io.WriteCloser
+	attrs       Metadata
+	groups      []string
+	printStdout bool
 }
 
 type Metadata = map[string]interface{}
@@ -69,7 +70,9 @@ func (l *Logger) Log(level int, message string, metadata ...Metadata) {
 	jsonData, _ := json.Marshal(data)
 	jsonData = append(jsonData, '\n')
 	l.file.Write(jsonData)
-	fmt.Print(string(jsonData))
+	if l.printStdout {
+		fmt.Print(string(jsonData))
+	}
 }
 
 func New(writer io.WriteCloser) *Logger {
@@ -146,6 +149,10 @@ func (l *Logger) WithGroup(group string) *Logger {
 		groups: append(append([]string{}, l.groups...), group),
 	}
 	return newLogger
+}
+
+func (l *Logger) TogglePrintStdout(enabled bool) {
+	l.printStdout = enabled
 }
 
 func (l *Logger) Close() {
