@@ -8,12 +8,11 @@ import (
 	alias_cmd "github.com/maycon-jesus/mj-cli/internal/commands_repository/alias"
 	config_cmd "github.com/maycon-jesus/mj-cli/internal/commands_repository/config"
 	branch_cmd "github.com/maycon-jesus/mj-cli/internal/commands_repository/git"
-	"github.com/maycon-jesus/mj-cli/pkg/logger"
 )
 
 // Execute executa o comando raiz
 func Execute(app *commands.App) {
-	app.Logger.Debug("Executando comando raiz", logger.Metadata{"event": "execute_root_command"})
+	app.Logger.Log.Debug("Executando comando raiz")
 
 	root := commandsrepository.NewRootCommand()
 	rootCmd := root.ToCobraCommand(app)

@@ -2,10 +2,10 @@ package commands
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/maycon-jesus/mj-cli/internal/config"
 	"github.com/maycon-jesus/mj-cli/pkg/intl"
-	"github.com/maycon-jesus/mj-cli/pkg/logger"
 	"github.com/maycon-jesus/mj-cli/pkg/mjterm"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -72,11 +72,11 @@ type ExecData struct {
 	Config     *config.ConfigRegistry
 	Translator *intl.Translator
 	Terminal   *mjterm.Terminal
-	Logger     *logger.Logger
+	Logger     *slog.Logger
 }
 
 func (c *Command) ToCobraCommand(app *App) *cobra.Command {
-	app.Logger.Debug("Converting custom command to Cobra command", logger.Metadata{"command": c.Name, "event": "convert_command_to_cobra"})
+	app.Logger.Log.Debug("Converting custom command to Cobra command", "command", c.Name)
 	// Adiciona traduções ao tradutor
 	app.Translator.AddMessagesBulk(c.Translations)
 
@@ -97,14 +97,10 @@ func (c *Command) ToCobraCommand(app *App) *cobra.Command {
 					Config:     app.Config,
 					Translator: app.Translator,
 					Terminal:   app.Terminal,
-					Logger:     app.Logger,
+					Logger:     app.Logger.Log,
 				}
 
 				err := c.BeforeRun(ctx, data)
-				if err != nil {
-					logPath := app.Logger.Name()
-					data.Terminal.Printf("Error occurred. Check log file at: %s\n", logPath)
-				}
 				return err
 			}
 			return nil
@@ -125,13 +121,9 @@ func (c *Command) ToCobraCommand(app *App) *cobra.Command {
 					Config:     app.Config,
 					Translator: app.Translator,
 					Terminal:   app.Terminal,
-					Logger:     app.Logger,
+					Logger:     app.Logger.Log,
 				}
 				err := c.Handler(ctx, data)
-				if err != nil {
-					logPath := app.Logger.Name()
-					data.Terminal.Printf("Error occurred. Check log file at: %s\n", logPath)
-				}
 				return err
 			}
 
@@ -146,13 +138,9 @@ func (c *Command) ToCobraCommand(app *App) *cobra.Command {
 					Config:     app.Config,
 					Translator: app.Translator,
 					Terminal:   app.Terminal,
-					Logger:     app.Logger,
+					Logger:     app.Logger.Log,
 				}
 				err := c.AfterRun(ctx, data)
-				if err != nil {
-					logPath := app.Logger.Name()
-					data.Terminal.Printf("Error occurred. Check log file at: %s\n", logPath)
-				}
 				return err
 			}
 			return nil
@@ -205,9 +193,10 @@ func (c *Command) addFlag(app *App, cmd *cobra.Command, flag Flag) {
 	}
 
 	if flag.Required {
+		app.Logger.Log.Debug("Marking flag as required", "flag", flag.Name, "command", c.Name)
 		err := cmd.MarkFlagRequired(flag.Name)
 		if err != nil {
-			panic(err)
+			app.Logger.Log.Error("Failed to mark flag as required", "flag", flag.Name, "command", c.Name, "error", err.Error())
 		}
 	}
 }

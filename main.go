@@ -2,7 +2,6 @@ package main
 
 import (
 	_ "embed"
-	"os"
 
 	"github.com/maycon-jesus/mj-cli/cmd"
 	"github.com/maycon-jesus/mj-cli/internal/commands"
@@ -20,27 +19,12 @@ func main() {
 	term := mjterm.New()
 	defer term.Close()
 
-	log, err := logger.NewWithTemporaryFile("mj-cli", term)
+	logger, err := logger.NewLoggerComplete(appName, appVersion)
 	if err != nil {
 		panic(err)
 	}
-	log = log.WithAttrs(logger.Metadata{
-		"app":     appName,
-		"version": appVersion,
-	})
-
-	defer log.Close()
-	defer log.RecoverPanic()
-
-	debugEnv := os.Getenv("DEBUG")
-	if debugEnv != "" {
-		err := log.SetConsoleLevel(debugEnv)
-		if err != nil {
-			log.Warn("Valor inválido para DEBUG, usando nível padrão", logger.Metadata{"DEBUG": debugEnv})
-		} else {
-			log.Debug("Nível de log definido por variável de ambiente", logger.Metadata{"DEBUG": debugEnv})
-		}
-	}
+	defer logger.FileHandler.Close()
+	log := logger.Log
 
 	log.Info("Iniciando aplicação")
 
@@ -51,17 +35,17 @@ func main() {
 	configRegistry.RegisterModule("general", newViperAdapter)
 
 	if err := newViperAdapter.ReadInConfig(); err != nil {
-		log.Warn("Falha ao carregar configuração", logger.Metadata{"error": err.Error()})
+		log.Warn("Falha ao carregar configuração", "error", err.Error())
 	} else {
 		log.Debug("Configuração carregada")
 	}
 
 	lang := newViperAdapter.GetString("lang")
 	translator := intl.NewTranslator(lang)
-	log.Debug("Tradutor inicializado", logger.Metadata{"lang": lang})
+	log.Debug("Tradutor inicializado", "lang", lang)
 
 	app := &commands.App{
-		Logger:     log,
+		Logger:     &logger,
 		Config:     configRegistry,
 		Translator: translator,
 		Terminal:   term,
@@ -70,7 +54,7 @@ func main() {
 	cmd.Execute(app)
 
 	if err := newViperAdapter.WriteConfig(); err != nil {
-		log.Error("Falha ao salvar configuração", logger.Metadata{"error": err.Error()})
+		log.Error("Falha ao salvar configuração", "error", err.Error())
 		panic(err)
 	}
 
