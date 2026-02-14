@@ -1,8 +1,6 @@
 package commands
 
 import (
-	"github.com/maycon-jesus/mj-cli/internal/config"
-	"github.com/maycon-jesus/mj-cli/pkg/intl"
 	"github.com/spf13/cobra"
 )
 
@@ -34,8 +32,9 @@ func (r *Registry) GetCommands() []*Command {
 }
 
 // AttachToRoot adiciona todos os comandos registrados a um comando raiz do Cobra
-func (r *Registry) AttachToRoot(rootCmd *cobra.Command, configRegistry *config.ConfigRegistry, translator *intl.Translator) {
+func (r *Registry) AttachToRoot(rootCmd *cobra.Command, app *App) {
+	app.Logger.Log.Debug("Attaching commands to root command", "command_count", len(r.commands))
 	for _, cmd := range r.commands {
-		rootCmd.AddCommand(cmd.ToCobraCommand(configRegistry, translator))
+		rootCmd.AddCommand(cmd.ToCobraCommand(app))
 	}
 }
