@@ -101,6 +101,11 @@ func (c *Command) ToCobraCommand(app *App) *cobra.Command {
 				}
 
 				err := c.BeforeRun(ctx, data)
+				if err != nil {
+					logPath := app.Logger.FileHandler.Name()
+					app.Logger.Log.Error("Error in BeforeRun hook", "command", c.Name, "error", err.Error())
+					app.Terminal.Printf("An error occurred in the BeforeRun hook. Please check the log file for details: %s\n", logPath)
+				}
 				return err
 			}
 			return nil
@@ -124,6 +129,11 @@ func (c *Command) ToCobraCommand(app *App) *cobra.Command {
 					Logger:     app.Logger.Log,
 				}
 				err := c.Handler(ctx, data)
+				if err != nil {
+					logPath := app.Logger.FileHandler.Name()
+					app.Logger.Log.Error("Error in main handler", "command", c.Name, "error", err.Error())
+					app.Terminal.Printf("An error occurred in the main handler. Please check the log file for details: %s\n", logPath)
+				}
 				return err
 			}
 
@@ -141,6 +151,11 @@ func (c *Command) ToCobraCommand(app *App) *cobra.Command {
 					Logger:     app.Logger.Log,
 				}
 				err := c.AfterRun(ctx, data)
+				if err != nil {
+					logPath := app.Logger.FileHandler.Name()
+					app.Logger.Log.Error("Error in AfterRun hook", "command", c.Name, "error", err.Error())
+					app.Terminal.Printf("An error occurred in the AfterRun hook. Please check the log file for details: %s\n", logPath)
+				}
 				return err
 			}
 			return nil
