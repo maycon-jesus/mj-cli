@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"os"
-
 	"github.com/maycon-jesus/mj-cli/internal/commands"
 	commandsrepository "github.com/maycon-jesus/mj-cli/internal/commands_repository"
 	alias_cmd "github.com/maycon-jesus/mj-cli/internal/commands_repository/alias"
@@ -30,8 +28,5 @@ func Execute(app *commands.App) {
 	// Anexa todos os comandos ao rootCmd
 	registry.AttachToRoot(rootCmd, app)
 
-	err := rootCmd.Execute()
-	if err != nil {
-		os.Exit(1)
-	}
+	rootCmd.Execute()
 }

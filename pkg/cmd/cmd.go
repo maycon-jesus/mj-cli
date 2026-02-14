@@ -75,7 +75,7 @@ func RunCommand(cmdStr string) error {
 //	}
 type CommandOptions struct {
 	// Stdin define o stream de entrada do comando
-	Stdin  io.Reader
+	Stdin io.Reader
 	// Stdout define o stream de saída padrão do comando
 	Stdout io.Writer
 	// Stderr define o stream de saída de erro do comando
@@ -148,7 +148,7 @@ func GetCommandOutput(cmdStr string) (string, error) {
 	cmd := exec.Command(args[0], args[1:]...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return "", err
+		return string(output), err
 	}
 
 	return string(output), nil
