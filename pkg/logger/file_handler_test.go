@@ -33,7 +33,7 @@ func TestNewFileHandler(t *testing.T) {
 	if len(handler.attrs) != 0 {
 		t.Error("attrs should be empty initially")
 	}
-	if handler.prefix != "" {
+	if len(handler.prefix) != 0 {
 		t.Error("prefix should be empty initially")
 	}
 }
@@ -196,8 +196,12 @@ func TestFileHandler_WithAttrsUsesPrefix(t *testing.T) {
 		slog.String("method", "GET"),
 	}).(*FileHandler)
 
-	if withAttr.attrs["req.method"] != "GET" {
-		t.Errorf("attrs = %v, want key 'req.method' with value 'GET'", withAttr.attrs)
+	reqGroup, ok := withAttr.attrs["req"].(map[string]any)
+	if !ok {
+		t.Fatalf("attrs[\"req\"] should be a nested map, got %v", withAttr.attrs)
+	}
+	if reqGroup["method"] != "GET" {
+		t.Errorf("attrs[\"req\"][\"method\"] = %v, want 'GET'", reqGroup["method"])
 	}
 }
 
@@ -206,12 +210,13 @@ func TestFileHandler_WithGroup(t *testing.T) {
 
 	grouped := handler.WithGroup("request").(*FileHandler)
 
-	if grouped.prefix != "request." {
-		t.Errorf("prefix = %q, want 'request.'", grouped.prefix)
+	wantPrefix := []string{"request"}
+	if len(grouped.prefix) != len(wantPrefix) || grouped.prefix[0] != wantPrefix[0] {
+		t.Errorf("prefix = %v, want %v", grouped.prefix, wantPrefix)
 	}
 
 	// original handler should not be modified
-	if handler.prefix != "" {
+	if len(handler.prefix) != 0 {
 		t.Error("original handler prefix should remain empty")
 	}
 }
@@ -221,8 +226,9 @@ func TestFileHandler_WithGroupNested(t *testing.T) {
 
 	nested := handler.WithGroup("http").(*FileHandler).WithGroup("request").(*FileHandler)
 
-	if nested.prefix != "http.request." {
-		t.Errorf("prefix = %q, want 'http.request.'", nested.prefix)
+	wantPrefix := []string{"http", "request"}
+	if len(nested.prefix) != len(wantPrefix) || nested.prefix[0] != wantPrefix[0] || nested.prefix[1] != wantPrefix[1] {
+		t.Errorf("prefix = %v, want %v", nested.prefix, wantPrefix)
 	}
 }
 
@@ -242,8 +248,12 @@ func TestFileHandler_HandleWithGroup(t *testing.T) {
 
 	data := readJSONLine(t, grouped)
 
-	if data["ctx.user"] != "alice" {
-		t.Errorf("ctx.user = %v, want 'alice'", data["ctx.user"])
+	ctxGroup, ok := data["ctx"].(map[string]any)
+	if !ok {
+		t.Fatalf("data[\"ctx\"] should be a nested map, got %v", data["ctx"])
+	}
+	if ctxGroup["user"] != "alice" {
+		t.Errorf("data[\"ctx\"][\"user\"] = %v, want 'alice'", ctxGroup["user"])
 	}
 }
 

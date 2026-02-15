@@ -228,8 +228,12 @@ func TestMultiHandler_WithGroup(t *testing.T) {
 	}
 
 	data := readJSONLine(t, fh)
-	if data["request.method"] != "POST" {
-		t.Errorf("request.method = %v, want 'POST'", data["request.method"])
+	reqGroup, ok := data["request"].(map[string]any)
+	if !ok {
+		t.Fatalf("data[\"request\"] should be a nested map, got %v", data["request"])
+	}
+	if reqGroup["method"] != "POST" {
+		t.Errorf("data[\"request\"][\"method\"] = %v, want 'POST'", reqGroup["method"])
 	}
 }
 
