@@ -103,3 +103,14 @@ func (s *GitService) BranchExists(branch string) (bool, error) {
 	s.logger.Debug("Branch exists", "branch", branch)
 	return true, nil
 }
+
+func (s *GitService) UndoLastCommit() error {
+	s.logger.Debug("Undoing last commit")
+	err := cmd.RunCommandWithOptions("git reset --soft HEAD~1", cmd.CommandOptions{})
+	if err != nil {
+		s.logger.Debug("Failed to undo last commit", "error", err)
+		return err
+	}
+	s.logger.Debug("Last commit undone successfully")
+	return nil
+}

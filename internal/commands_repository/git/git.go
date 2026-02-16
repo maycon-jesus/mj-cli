@@ -10,7 +10,10 @@ func NewGitCommand() *commands.Command {
 		Name:                "git",
 		ShortDescriptionKey: "command.git.short_description",
 		RunHelpOnNoArgs:     true,
-		SubCommands:         []*commands.Command{newGitNewCommand()},
+		SubCommands: []*commands.Command{
+			newGitNewCommand(),
+			newGitUndoCommand(),
+		},
 		Translations: intl.Translations{
 			"en": {
 				"command.git.short_description": "Manage git repository",
