@@ -8,8 +8,6 @@ import (
 	"log/slog"
 	"os"
 	"path"
-
-	"github.com/maycon-jesus/mj-cli/pkg/tint"
 )
 
 type LogService struct {
@@ -25,18 +23,6 @@ func NewLogService() *LogService {
 func (s *LogService) WithLogger(logger *slog.Logger) *LogService {
 	s.logger = logger
 	return s
-}
-
-var StyleTime = tint.NewStyle().Foreground(tint.BrightBlack)
-var StyleLevelDebug = tint.NewStyle().Foreground(tint.BrightBlue)
-var StyleLevelInfo = tint.NewStyle().Foreground(tint.BrightGreen)
-var StyleLevelWarn = tint.NewStyle().Foreground(tint.BrightYellow)
-var StyleLevelError = tint.NewStyle().Foreground(tint.BrightRed)
-var StyleLevel = map[string]*tint.Style{
-	slog.LevelDebug.String(): StyleLevelDebug,
-	slog.LevelInfo.String():  StyleLevelInfo,
-	slog.LevelWarn.String():  StyleLevelWarn,
-	slog.LevelError.String(): StyleLevelError,
 }
 
 type LogLine struct {

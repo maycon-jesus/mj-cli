@@ -2,8 +2,8 @@ package log_cmd
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
-	"fmt"
 	"log/slog"
 	"time"
 
@@ -60,14 +60,14 @@ func NewLogViewCommand() *commands.Command {
 				return errors.New(execData.Translator.T("command.log.arg.file_path.required", map[string]string{}))
 			}
 
-			logService := services.NewLogService()
+			logService := services.NewLogService().WithLogger(execData.Logger.WithGroup("logservice"))
 			ch, err := logService.GetLogs(filePath)
 			if err != nil {
 				return err
 			}
 			for logLine := range ch {
 				if logLine.Error != nil {
-					fmt.Println("Error reading log line:", logLine.Error)
+					execData.Terminal.Printf("Error reading log line: %v\n", logLine.Error)
 					continue
 				}
 				line := logLine.Log
@@ -79,7 +79,7 @@ func NewLogViewCommand() *commands.Command {
 				timeParsed, err := time.Parse(time.RFC3339, timeIso)
 				timeParsed = timeParsed.Local()
 				if err != nil {
-					fmt.Println("Error parsing time:", err)
+					execData.Terminal.Printf("Error parsing time: %v\n", err)
 					continue
 				}
 
@@ -92,12 +92,20 @@ func NewLogViewCommand() *commands.Command {
 
 				execData.Terminal.Printf("[%s] [%s] %s\n", timeRendered, levelRendered, msg)
 
-				for key, value := range line {
-					if key == "time" || key == "level" || key == "message" {
-						continue
-					}
-					execData.Terminal.Printf("    %v: %v\n", key, value)
+				delete(line, "time")
+				delete(line, "level")
+				delete(line, "message")
+
+				if len(line) == 0 {
+					continue
 				}
+				jsonLine, err := json.MarshalIndent(line, "", "  ")
+				if err != nil {
+					execData.Terminal.Printf("Error marshaling log line to JSON: %v\n", err)
+					continue
+				}
+
+				execData.Terminal.Println(string(jsonLine))
 			}
 
 			return nil
