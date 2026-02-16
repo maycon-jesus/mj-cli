@@ -10,7 +10,7 @@ import (
 	"github.com/maycon-jesus/mj-cli/pkg/ui"
 )
 
-func newBranchNewCommand() *commands.Command {
+func newGitNewCommand() *commands.Command {
 	return &commands.Command{
 		Name:                "new",
 		ShortDescriptionKey: "command.git.new.short_description",
