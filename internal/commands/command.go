@@ -126,7 +126,7 @@ func (c *Command) ToCobraCommand(app *App) *cobra.Command {
 					Config:     app.Config,
 					Translator: app.Translator,
 					Terminal:   app.Terminal,
-					Logger:     app.Logger.Log,
+					Logger:     app.Logger.Log.WithGroup("command"),
 				}
 				err := c.Handler(ctx, data)
 				if err != nil {

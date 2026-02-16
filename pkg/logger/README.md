@@ -62,6 +62,12 @@ handler, err := logger.NewTemporaryFileHandler("minha-app")
 {"app":"mj-cli","version":"1.0.0","level":"INFO","time":"2025-01-15T10:30:00Z","message":"aplicação iniciada","key":"value"}
 ```
 
+Com grupos (`WithGroup`), os atributos são aninhados como objetos JSON:
+
+```json
+{"app":"mj-cli","request":{"method":"GET","path":"/api"},"level":"INFO","time":"2025-01-15T10:30:00Z","message":"request recebido"}
+```
+
 **Métodos principais:**
 
 | Método | Descrição |
@@ -69,7 +75,7 @@ handler, err := logger.NewTemporaryFileHandler("minha-app")
 | `Enabled(ctx, level)` | Verifica se o nível está habilitado |
 | `Handle(ctx, record)` | Serializa e escreve o registro no arquivo |
 | `WithAttrs(attrs)` | Retorna um handler clone com atributos adicionais |
-| `WithGroup(name)` | Retorna um handler clone com prefixo de grupo (`name.`) |
+| `WithGroup(name)` | Retorna um handler clone que aninha atributos sob um objeto JSON `name` |
 | `SetLevel(level)` | Altera o nível mínimo de log |
 | `Name()` | Retorna o caminho do arquivo de log |
 | `Close()` | Fecha o arquivo subjacente |

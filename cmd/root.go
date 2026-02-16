@@ -6,6 +6,7 @@ import (
 	alias_cmd "github.com/maycon-jesus/mj-cli/internal/commands_repository/alias"
 	config_cmd "github.com/maycon-jesus/mj-cli/internal/commands_repository/config"
 	branch_cmd "github.com/maycon-jesus/mj-cli/internal/commands_repository/git"
+	log_cmd "github.com/maycon-jesus/mj-cli/internal/commands_repository/log"
 )
 
 // Execute executa o comando raiz
@@ -23,6 +24,7 @@ func Execute(app *commands.App) {
 		config_cmd.NewConfigCommand(),
 		alias_cmd.NewAliasCommand(),
 		branch_cmd.NewGitCommand(),
+		log_cmd.NewLogCommand(),
 	)
 
 	// Anexa todos os comandos ao rootCmd

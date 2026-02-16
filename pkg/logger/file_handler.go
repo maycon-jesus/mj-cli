@@ -4,38 +4,42 @@ import (
 	"context"
 	"encoding/json"
 	"log/slog"
-	"maps"
 	"os"
+	"slices"
 	"sync"
 )
 
 // FileHandler is a thread-safe [slog.Handler] that writes JSON-encoded log
 // records to an [os.File], one JSON object per line.
 //
-// Each record is serialized as a flat JSON object containing the handler's
+// Each record is serialized as a JSON object containing the handler's
 // accumulated attributes, the record-level attributes, and the standard
-// "level", "time", and "message" fields.
+// "level", "time", and "message" fields. Groups created via [FileHandler.WithGroup]
+// are represented as nested JSON objects.
 //
 // Cloned handlers (via [FileHandler.WithAttrs] and [FileHandler.WithGroup])
 // share the same file and mutex, so concurrent writes from different handler
 // instances are safe.
 type FileHandler struct {
-	file   *os.File
-	mu     *sync.RWMutex
-	attrs  map[string]any
-	prefix string
-	level  slog.Level
+	file         *os.File
+	mu           *sync.RWMutex
+	attrs        map[string]any
+	currentGroup map[string]any
+	prefix       []string
+	level        slog.Level
 }
 
 // NewFileHandler returns a [FileHandler] that writes to file.
 // The default level is [slog.LevelDebug].
 func NewFileHandler(file *os.File) *FileHandler {
+	attrs := make(map[string]any)
 	return &FileHandler{
-		file:   file,
-		mu:     &sync.RWMutex{},
-		attrs:  make(map[string]any),
-		prefix: "",
-		level:  slog.LevelDebug,
+		file:         file,
+		mu:           &sync.RWMutex{},
+		attrs:        attrs,
+		currentGroup: attrs,
+		level:        slog.LevelDebug,
+		prefix:       make([]string, 0),
 	}
 }
 
@@ -66,18 +70,20 @@ func (h *FileHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
 	nHandler := h.cloneUnsafe()
 
 	for _, attr := range attrs {
-		nHandler.attrs[h.prefix+attr.Key] = attr.Value.Any()
+		nHandler.currentGroup[attr.Key] = attr.Value.Any()
 	}
 	return nHandler
 }
 
-// WithGroup returns a new [FileHandler] that prefixes subsequent attribute keys
-// with "name.". The returned handler shares the same file and mutex.
+// WithGroup returns a new [FileHandler] that nests subsequent attributes under
+// a JSON object keyed by name. The returned handler shares the same file and mutex.
 func (h *FileHandler) WithGroup(name string) slog.Handler {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
 	nHandler := h.cloneUnsafe()
-	nHandler.prefix = h.prefix + name + "."
+	nHandler.prefix = append(nHandler.prefix, name)
+	nHandler.currentGroup[name] = make(map[string]any)
+	nHandler.currentGroup = nHandler.currentGroup[name].(map[string]any)
 	return nHandler
 }
 
@@ -85,11 +91,18 @@ func (h *FileHandler) WithGroup(name string) slog.Handler {
 // The output merges the handler's stored attributes with the record's attributes,
 // plus the standard "level", "time" (UTC, RFC 3339), and "message" fields.
 func (h *FileHandler) Handle(ctx context.Context, record slog.Record) error {
-	data := make(map[string]any)
-	maps.Copy(data, h.attrs)
+	data := deepCloneMap(h.attrs)
+
+	dataCurrentGroup := data
+	for _, group := range h.prefix {
+		if _, ok := dataCurrentGroup[group]; !ok {
+			dataCurrentGroup[group] = make(map[string]any)
+		}
+		dataCurrentGroup = dataCurrentGroup[group].(map[string]any)
+	}
 
 	record.Attrs(func(attr slog.Attr) bool {
-		data[h.prefix+attr.Key] = attr.Value.Any()
+		dataCurrentGroup[attr.Key] = attr.Value.Any()
 		return true
 	})
 
@@ -133,13 +146,35 @@ func (h *FileHandler) SetLevel(level slog.Level) {
 }
 
 func (h *FileHandler) cloneUnsafe() *FileHandler {
+	attrs := deepCloneMap(h.attrs)
+	prefix := slices.Clone(h.prefix)
+
+	currentGroup := attrs
+
+	for _, group := range h.prefix {
+		currentGroup = currentGroup[group].(map[string]any)
+	}
+
 	return &FileHandler{
-		file:   h.file,
-		mu:     h.mu,
-		attrs:  maps.Clone(h.attrs),
-		prefix: h.prefix,
-		level:  h.level,
+		file:         h.file,
+		mu:           h.mu,
+		attrs:        attrs,
+		currentGroup: currentGroup,
+		prefix:       prefix,
+		level:        h.level,
 	}
 }
 
 var _ slog.Handler = (*FileHandler)(nil)
+
+func deepCloneMap(m map[string]any) map[string]any {
+	clone := make(map[string]any)
+	for k, v := range m {
+		if nestedMap, ok := v.(map[string]any); ok {
+			clone[k] = deepCloneMap(nestedMap)
+		} else {
+			clone[k] = v
+		}
+	}
+	return clone
+}
