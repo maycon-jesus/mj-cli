@@ -42,6 +42,11 @@ type stopSpinnerMsg struct {
 	err     bool
 }
 
+type updateSpinnerMsg struct {
+	id      string
+	message string
+}
+
 type closeMsg struct {
 	closed chan struct{}
 }
