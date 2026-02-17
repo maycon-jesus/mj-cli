@@ -58,12 +58,14 @@ func newGitSyncCommand() *commands.Command {
 			currentBranch, err := gitService.GetCurrentBranch()
 			if err != nil {
 				execData.Logger.Error("Failed to get current branch", "error", err)
+				term.StopSpinnerWithError("sync", t("command.git.sync.failed_get_current_branch", map[string]string{}))
 				return tErr("command.git.sync.failed_get_current_branch", map[string]string{})
 			}
 
 			mainBranch, err := gitService.DetectMainBranch()
 			if err != nil {
 				execData.Logger.Error("Failed to detect main branch", "error", err)
+				term.StopSpinnerWithError("sync", t("command.git.sync.failed_detect_main_branch", map[string]string{}))
 				return tErr("command.git.sync.failed_detect_main_branch", map[string]string{})
 			}
 
@@ -82,6 +84,7 @@ func newGitSyncCommand() *commands.Command {
 			err = gitService.Checkout(mainBranch)
 			if err != nil {
 				execData.Logger.Error("Failed to checkout main branch", "branch", mainBranch, "error", err.Error())
+				term.StopSpinnerWithError("sync", t("command.git.sync.failed_checkout_main_branch", map[string]string{}))
 				return tErr("command.git.sync.failed_checkout_main_branch", map[string]string{})
 			}
 
@@ -89,6 +92,7 @@ func newGitSyncCommand() *commands.Command {
 			err = gitService.Pull()
 			if err != nil {
 				execData.Logger.Error("Failed to pull latest changes on main branch", "branch", mainBranch, "error", err.Error())
+				term.StopSpinnerWithError("sync", t("command.git.sync.failed_pull_main_branch", map[string]string{}))
 				return tErr("command.git.sync.failed_pull_main_branch", map[string]string{})
 			}
 
@@ -96,12 +100,14 @@ func newGitSyncCommand() *commands.Command {
 			err = gitService.Checkout(currentBranch)
 			if err != nil {
 				execData.Logger.Error("Failed to checkout back to current branch", "branch", currentBranch, "error", err.Error())
+				term.StopSpinnerWithError("sync", t("command.git.sync.failed_checkout_current_branch", map[string]string{}))
 				return tErr("command.git.sync.failed_checkout_current_branch", map[string]string{})
 			}
 
 			hasNewCommits, err := gitService.BranchHasNewCommitsFor(mainBranch)
 			if err != nil {
 				execData.Logger.Error("Failed to check if current branch has new commits compared to main branch", "branch", currentBranch, "mainBranch", mainBranch, "error", err.Error())
+				term.StopSpinnerWithError("sync", t("command.git.sync.failed_check_new_commits", map[string]string{}))
 				return tErr("command.git.sync.failed_check_new_commits", map[string]string{})
 			}
 
@@ -122,6 +128,7 @@ func newGitSyncCommand() *commands.Command {
 			err = gitService.Rebase(mainBranch)
 			if err != nil {
 				execData.Logger.Error("Failed to rebase current branch with main branch", "branch", currentBranch, "mainBranch", mainBranch, "error", err.Error())
+				term.StopSpinnerWithError("sync", t("command.git.sync.failed_rebase_current_branch", map[string]string{}))
 				return tErr("command.git.sync.failed_rebase_current_branch", map[string]string{})
 			}
 
