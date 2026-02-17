@@ -13,6 +13,7 @@ func NewGitCommand() *commands.Command {
 		SubCommands: []*commands.Command{
 			newGitNewCommand(),
 			newGitUndoCommand(),
+			newGitSyncCommand(),
 		},
 		Translations: intl.Translations{
 			"en": {
