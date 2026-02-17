@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"strings"
 
 	"github.com/maycon-jesus/mj-cli/pkg/cmd"
 )
@@ -113,4 +114,40 @@ func (s *GitService) UndoLastCommit() error {
 	}
 	s.logger.Debug("Last commit undone successfully")
 	return nil
+}
+
+func (s *GitService) GetCurrentBranch() (string, error) {
+	s.logger.Debug("Getting current branch")
+	output, err := cmd.GetCommandOutput("git branch --show-current")
+	if err != nil {
+		s.logger.Debug("Failed to get current branch", "error", err)
+		return "", err
+	}
+	currentBranch := strings.TrimSpace(string(output))
+	s.logger.Debug("Current branch retrieved successfully", "branch", currentBranch)
+	return currentBranch, nil
+}
+
+func (s *GitService) Rebase(baseBranch string) error {
+	s.logger.Debug("Rebasing current branch onto base branch", "baseBranch", baseBranch)
+	output, err := cmd.GetCommandOutput(fmt.Sprintf("git rebase %s", baseBranch))
+	if err != nil {
+		s.logger.Debug("Failed to rebase", "baseBranch", baseBranch, "error", err, "output", output)
+		return err
+	}
+	s.logger.Debug("Rebase completed successfully", "baseBranch", baseBranch)
+	return nil
+}
+
+func (s *GitService) BranchHasNewCommitsFor(baseBranch string) (bool, error) {
+	s.logger.Debug("Checking if base branch has new commits not in HEAD", "baseBranch", baseBranch)
+	output, err := cmd.GetCommandOutput(fmt.Sprintf("git rev-list --right-only --count HEAD...%s", baseBranch))
+	if err != nil {
+		s.logger.Debug("Failed to check for new commits", "baseBranch", baseBranch, "error", err, "output", output)
+		return false, err
+	}
+	countStr := strings.TrimSpace(output)
+	hasNewCommits := countStr != "0"
+	s.logger.Debug("Checked for new commits successfully", "baseBranch", baseBranch, "hasNewCommits", hasNewCommits)
+	return hasNewCommits, nil
 }

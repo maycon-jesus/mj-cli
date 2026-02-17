@@ -15,6 +15,8 @@ func Execute(app *commands.App) {
 
 	root := commandsrepository.NewRootCommand()
 	rootCmd := root.ToCobraCommand(app)
+	rootCmd.SetOut(app.Terminal)
+	rootCmd.SetErr(app.Terminal)
 
 	// Cria o registro de comandos
 	registry := commands.NewRegistry()

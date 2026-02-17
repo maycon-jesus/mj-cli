@@ -114,6 +114,10 @@ func New() *Terminal {
 					finalMsg = fmt.Sprintf("\r\033[K\033[32m✓\033[0m %s\n", e.message)
 				}
 				fmt.Print(finalMsg)
+			case updateSpinnerMsg:
+				if term.spinner != nil && term.spinner.id == e.id {
+					term.spinner.message = e.message
+				}
 			case closeMsg:
 				if term.spinner != nil {
 					close(term.spinner.stop)

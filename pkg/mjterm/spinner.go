@@ -22,3 +22,10 @@ func (t *Terminal) StopSpinnerWithError(id string, message string) error {
 		err:     true,
 	})
 }
+
+func (t *Terminal) UpdateSpinnerMessage(id string, message string) error {
+	return t.addEvent(updateSpinnerMsg{
+		id:      id,
+		message: message,
+	})
+}
