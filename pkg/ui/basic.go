@@ -68,3 +68,12 @@ func Lambda(message string) string {
 		Foreground(tint.Magenta).
 		Render(str)
 }
+
+// Lambdaf é a versão formatada de Lambda que aceita formatação de string com argumentos, similar a fmt.Sprintf.
+func Lambdaf(message string, args ...any) string {
+	str := fmt.Sprintf("λ "+message, args...)
+	return tint.NewStyle().
+		Bold().
+		Foreground(tint.Magenta).
+		Render(str)
+}
