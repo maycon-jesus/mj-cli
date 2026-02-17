@@ -15,22 +15,37 @@ func newGitSyncCommand() *commands.Command {
 		ShortDescriptionKey: "git.sync.short_description",
 		Translations: intl.Translations{
 			"en": {
-				"git.sync.short_description":          "Sync the current branch with the main branch",
-				"command.git.sync.syncing":            "Syncing branch {{currentBranch}} with {{mainBranch}}",
-				"command.git.sync.success":            "Branch {{currentBranch}} successfully synced with {{mainBranch}} branch",
-				"command.git.sync.already_up_to_date": "Current branch is already up to date with main branch",
+				"git.sync.short_description":                      "Sync the current branch with the main branch",
+				"command.git.sync.syncing":                        "Syncing branch {{currentBranch}} with {{mainBranch}}",
+				"command.git.sync.success":                        "Branch {{currentBranch}} successfully synced with {{mainBranch}} branch",
+				"command.git.sync.already_up_to_date":             "Current branch is already up to date with main branch",
+				"command.git.sync.failed_get_current_branch":      "Failed to get current branch",
+				"command.git.sync.failed_detect_main_branch":      "Failed to detect main branch",
+				"command.git.sync.failed_checkout_main_branch":    "Failed to checkout main branch",
+				"command.git.sync.failed_checkout_current_branch": "Failed to checkout current branch",
+				"command.git.sync.failed_rebase_current_branch":   "Failed to rebase current branch",
+				"command.git.sync.failed_check_new_commits":       "Failed to check if current branch has new commits compared to main branch",
+				"command.git.sync.failed_pull_main_branch":        "Failed to pull latest changes on main branch",
 			},
 			"pt-BR": {
-				"git.sync.short_description":          "Sincroniza a branch atual com a branch principal",
-				"command.git.sync.syncing":            "Sincronizando branch {{currentBranch}} com {{mainBranch}}",
-				"command.git.sync.success":            "Branch {{currentBranch}} sincronizada com a branch {{mainBranch}} com sucesso",
-				"command.git.sync.already_up_to_date": "A branch atual já está atualizada com a branch principal",
+				"git.sync.short_description":                      "Sincroniza a branch atual com a branch principal",
+				"command.git.sync.syncing":                        "Sincronizando branch {{currentBranch}} com {{mainBranch}}",
+				"command.git.sync.success":                        "Branch {{currentBranch}} sincronizada com a branch {{mainBranch}} com sucesso",
+				"command.git.sync.already_up_to_date":             "A branch atual já está atualizada com a branch principal",
+				"command.git.sync.failed_get_current_branch":      "Falha ao obter a branch atual",
+				"command.git.sync.failed_detect_main_branch":      "Falha ao detectar a branch principal",
+				"command.git.sync.failed_checkout_main_branch":    "Falha ao fazer checkout da branch principal",
+				"command.git.sync.failed_checkout_current_branch": "Falha ao fazer checkout da branch atual",
+				"command.git.sync.failed_rebase_current_branch":   "Falha ao rebasear a branch atual",
+				"command.git.sync.failed_check_new_commits":       "Falha ao verificar se a branch atual tem novos commits",
+				"command.git.sync.failed_pull_main_branch":        "Falha ao puxar as últimas mudanças da branch principal",
 			},
 		},
 		Handler: func(ctx context.Context, execData *commands.ExecData) error {
 			log := execData.Logger
 			term := execData.Terminal
 			t := execData.Translator.T
+			tErr := execData.Translator.Errorf
 
 			log.Info("Starting git sync process")
 			gitService := services.NewGitService().WithLogger(execData.Logger.WithGroup("gitservice"))
@@ -43,13 +58,13 @@ func newGitSyncCommand() *commands.Command {
 			currentBranch, err := gitService.GetCurrentBranch()
 			if err != nil {
 				execData.Logger.Error("Failed to get current branch", "error", err)
-				return err
+				return tErr("command.git.sync.failed_get_current_branch", map[string]string{})
 			}
 
 			mainBranch, err := gitService.DetectMainBranch()
 			if err != nil {
 				execData.Logger.Error("Failed to detect main branch", "error", err)
-				return err
+				return tErr("command.git.sync.failed_detect_main_branch", map[string]string{})
 			}
 
 			term.UpdateSpinnerMessage("sync", t("command.git.sync.syncing", map[string]string{
@@ -67,27 +82,27 @@ func newGitSyncCommand() *commands.Command {
 			err = gitService.Checkout(mainBranch)
 			if err != nil {
 				execData.Logger.Error("Failed to checkout main branch", "branch", mainBranch, "error", err.Error())
-				return err
+				return tErr("command.git.sync.failed_checkout_main_branch", map[string]string{})
 			}
 
 			term.Println(ui.Lambdaf("git pull"))
 			err = gitService.Pull()
 			if err != nil {
 				execData.Logger.Error("Failed to pull latest changes on main branch", "branch", mainBranch, "error", err.Error())
-				return err
+				return tErr("command.git.sync.failed_pull_main_branch", map[string]string{})
 			}
 
 			term.Println(ui.Lambdaf("git checkout %s", currentBranch))
 			err = gitService.Checkout(currentBranch)
 			if err != nil {
 				execData.Logger.Error("Failed to checkout back to current branch", "branch", currentBranch, "error", err.Error())
-				return err
+				return tErr("command.git.sync.failed_checkout_current_branch", map[string]string{})
 			}
 
 			hasNewCommits, err := gitService.BranchHasNewCommitsFor(mainBranch)
 			if err != nil {
 				execData.Logger.Error("Failed to check if current branch has new commits compared to main branch", "branch", currentBranch, "mainBranch", mainBranch, "error", err.Error())
-				return err
+				return tErr("command.git.sync.failed_check_new_commits", map[string]string{})
 			}
 
 			if !hasNewCommits {
@@ -107,7 +122,7 @@ func newGitSyncCommand() *commands.Command {
 			err = gitService.Rebase(mainBranch)
 			if err != nil {
 				execData.Logger.Error("Failed to rebase current branch with main branch", "branch", currentBranch, "mainBranch", mainBranch, "error", err.Error())
-				return err
+				return tErr("command.git.sync.failed_rebase_current_branch", map[string]string{})
 			}
 
 			term.StopSpinner("sync", t("command.git.sync.success", map[string]string{
