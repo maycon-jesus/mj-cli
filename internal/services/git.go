@@ -151,3 +151,37 @@ func (s *GitService) BranchHasNewCommitsFor(baseBranch string) (bool, error) {
 	s.logger.Debug("Checked for new commits successfully", "baseBranch", baseBranch, "hasNewCommits", hasNewCommits)
 	return hasNewCommits, nil
 }
+
+func (s *GitService) HasUncommitedChanges() (bool, error) {
+	s.logger.Debug("Checking for uncommited changes")
+	output, err := cmd.GetCommandOutput("git status --porcelain")
+	if err != nil {
+		s.logger.Debug("Failed to check for uncommited changes", "error", err)
+		return false, err
+	}
+	hasChanges := strings.TrimSpace(output) != ""
+	s.logger.Debug("Checked for uncommited changes successfully", "hasUncommitedChanges", hasChanges)
+	return hasChanges, nil
+}
+
+func (s *GitService) StashPush(stashName string) error {
+	s.logger.Debug("Stashing changes", "stashName", stashName)
+	err := cmd.RunCommandWithOptions(fmt.Sprintf("git stash push -m \"%s\"", stashName), cmd.CommandOptions{})
+	if err != nil {
+		s.logger.Debug("Failed to stash changes", "stashName", stashName, "error", err)
+		return err
+	}
+	s.logger.Debug("Changes stashed successfully", "stashName", stashName)
+	return nil
+}
+
+func (s *GitService) StashPop() error {
+	s.logger.Debug("Popping latest stash")
+	err := cmd.RunCommandWithOptions("git stash pop", cmd.CommandOptions{})
+	if err != nil {
+		s.logger.Debug("Failed to pop latest stash", "error", err)
+		return err
+	}
+	s.logger.Debug("Latest stash popped successfully")
+	return nil
+}

@@ -15,30 +15,38 @@ func newGitSyncCommand() *commands.Command {
 		ShortDescriptionKey: "git.sync.short_description",
 		Translations: intl.Translations{
 			"en": {
-				"git.sync.short_description":                      "Sync the current branch with the main branch",
-				"command.git.sync.syncing":                        "Syncing branch {{currentBranch}} with {{mainBranch}}",
-				"command.git.sync.success":                        "Branch {{currentBranch}} successfully synced with {{mainBranch}} branch",
-				"command.git.sync.already_up_to_date":             "Current branch is already up to date with main branch",
-				"command.git.sync.failed_get_current_branch":      "Failed to get current branch",
-				"command.git.sync.failed_detect_main_branch":      "Failed to detect main branch",
-				"command.git.sync.failed_checkout_main_branch":    "Failed to checkout main branch",
-				"command.git.sync.failed_checkout_current_branch": "Failed to checkout current branch",
-				"command.git.sync.failed_rebase_current_branch":   "Failed to rebase current branch",
-				"command.git.sync.failed_check_new_commits":       "Failed to check if current branch has new commits compared to main branch",
-				"command.git.sync.failed_pull_main_branch":        "Failed to pull latest changes on main branch",
+				"git.sync.short_description":                        "Sync the current branch with the main branch",
+				"command.git.sync.syncing":                          "Syncing branch {{currentBranch}} with {{mainBranch}}",
+				"command.git.sync.success":                          "Branch {{currentBranch}} successfully synced with {{mainBranch}} branch",
+				"command.git.sync.already_up_to_date":               "Current branch is already up to date with main branch",
+				"command.git.sync.failed_get_current_branch":        "Failed to get current branch",
+				"command.git.sync.failed_detect_main_branch":        "Failed to detect main branch",
+				"command.git.sync.failed_checkout_main_branch":      "Failed to checkout main branch",
+				"command.git.sync.failed_checkout_current_branch":   "Failed to checkout current branch",
+				"command.git.sync.failed_rebase_current_branch":     "Failed to rebase current branch",
+				"command.git.sync.failed_check_new_commits":         "Failed to check if current branch has new commits compared to main branch",
+				"command.git.sync.failed_pull_main_branch":          "Failed to pull latest changes on main branch",
+				"command.git.sync.stash_message":                    "mj-cli: git sync stash",
+				"command.git.sync.failed_stash_changes":             "Failed to stash changes before syncing branches",
+				"command.git.sync.failed_pop_stash_changes":         "Failed to unstash changes after syncing branches",
+				"command.git.sync.failed_check_uncommitted_changes": "Failed to check for uncommitted changes",
 			},
 			"pt-BR": {
-				"git.sync.short_description":                      "Sincroniza a branch atual com a branch principal",
-				"command.git.sync.syncing":                        "Sincronizando branch {{currentBranch}} com {{mainBranch}}",
-				"command.git.sync.success":                        "Branch {{currentBranch}} sincronizada com a branch {{mainBranch}} com sucesso",
-				"command.git.sync.already_up_to_date":             "A branch atual já está atualizada com a branch principal",
-				"command.git.sync.failed_get_current_branch":      "Falha ao obter a branch atual",
-				"command.git.sync.failed_detect_main_branch":      "Falha ao detectar a branch principal",
-				"command.git.sync.failed_checkout_main_branch":    "Falha ao fazer checkout da branch principal",
-				"command.git.sync.failed_checkout_current_branch": "Falha ao fazer checkout da branch atual",
-				"command.git.sync.failed_rebase_current_branch":   "Falha ao rebasear a branch atual",
-				"command.git.sync.failed_check_new_commits":       "Falha ao verificar se a branch atual tem novos commits",
-				"command.git.sync.failed_pull_main_branch":        "Falha ao puxar as últimas mudanças da branch principal",
+				"git.sync.short_description":                        "Sincroniza a branch atual com a branch principal",
+				"command.git.sync.syncing":                          "Sincronizando branch {{currentBranch}} com {{mainBranch}}",
+				"command.git.sync.success":                          "Branch {{currentBranch}} sincronizada com a branch {{mainBranch}} com sucesso",
+				"command.git.sync.already_up_to_date":               "A branch atual já está atualizada com a branch principal",
+				"command.git.sync.failed_get_current_branch":        "Falha ao obter a branch atual",
+				"command.git.sync.failed_detect_main_branch":        "Falha ao detectar a branch principal",
+				"command.git.sync.failed_checkout_main_branch":      "Falha ao fazer checkout da branch principal",
+				"command.git.sync.failed_checkout_current_branch":   "Falha ao fazer checkout da branch atual",
+				"command.git.sync.failed_rebase_current_branch":     "Falha ao rebasear a branch atual",
+				"command.git.sync.failed_check_new_commits":         "Falha ao verificar se a branch atual tem novos commits",
+				"command.git.sync.failed_pull_main_branch":          "Falha ao puxar as últimas mudanças da branch principal",
+				"command.git.sync.stash_message":                    "mj-cli: stash do git sync",
+				"command.git.sync.failed_stash_changes":             "Falha ao stashear as mudanças antes de sincronizar as branches",
+				"command.git.sync.failed_pop_stash_changes":         "Falha ao unstashear as mudanças depois de sincronizar as branches",
+				"command.git.sync.failed_check_uncommitted_changes": "Falha ao verificar por mudanças não comitadas",
 			},
 		},
 		Handler: func(ctx context.Context, execData *commands.ExecData) error {
@@ -80,6 +88,26 @@ func newGitSyncCommand() *commands.Command {
 			})))
 			execData.Logger.Info("Syncing current branch with main branch", "mainBranch", mainBranch, "currentBranch", currentBranch)
 
+			// check if there are uncommitted changes
+			hasUncommittedChanges, err := gitService.HasUncommitedChanges()
+			if err != nil {
+				execData.Logger.Error("Failed to check for uncommitted changes", "error", err)
+				term.StopSpinnerWithError("sync", t("command.git.sync.failed_check_uncommitted_changes", map[string]string{}))
+				return tErr("command.git.sync.failed_check_uncommitted_changes", map[string]string{})
+			}
+
+			// stash push
+			if hasUncommittedChanges {
+				term.Println(ui.Lambdaf("git stash push -m \"%s\"", t("command.git.sync.stash_message", map[string]string{})))
+				err = gitService.StashPush(t("command.git.sync.stash_message", map[string]string{}))
+				if err != nil {
+					execData.Logger.Error("Failed to stash changes", "error", err)
+					term.StopSpinnerWithError("sync", t("command.git.sync.failed_stash_changes", map[string]string{}))
+					return tErr("command.git.sync.failed_stash_changes", map[string]string{})
+				}
+			}
+
+			// checkout on main
 			term.Println(ui.Lambdaf("git checkout %s", mainBranch))
 			err = gitService.Checkout(mainBranch)
 			if err != nil {
@@ -117,6 +145,18 @@ func newGitSyncCommand() *commands.Command {
 					"currentBranch": currentBranch,
 					"mainBranch":    mainBranch,
 				})))
+
+				// stash pop
+				if hasUncommittedChanges {
+					term.Println(ui.Lambdaf("git stash pop"))
+					err = gitService.StashPop()
+					if err != nil {
+						execData.Logger.Error("Failed to pop stashed changes", "error", err)
+						term.StopSpinnerWithError("sync", t("command.git.sync.failed_pop_stash_changes", map[string]string{}))
+						return tErr("command.git.sync.failed_pop_stash_changes", map[string]string{})
+					}
+				}
+
 				term.StopSpinner("sync", t("command.git.sync.success", map[string]string{
 					"currentBranch": currentBranch,
 					"mainBranch":    mainBranch,
@@ -130,6 +170,17 @@ func newGitSyncCommand() *commands.Command {
 				execData.Logger.Error("Failed to rebase current branch with main branch", "branch", currentBranch, "mainBranch", mainBranch, "error", err.Error())
 				term.StopSpinnerWithError("sync", t("command.git.sync.failed_rebase_current_branch", map[string]string{}))
 				return tErr("command.git.sync.failed_rebase_current_branch", map[string]string{})
+			}
+
+			// stash pop
+			if hasUncommittedChanges {
+				term.Println(ui.Lambdaf("git stash pop"))
+				err = gitService.StashPop()
+				if err != nil {
+					execData.Logger.Error("Failed to pop stashed changes", "error", err)
+					term.StopSpinnerWithError("sync", t("command.git.sync.failed_pop_stash_changes", map[string]string{}))
+					return tErr("command.git.sync.failed_pop_stash_changes", map[string]string{})
+				}
 			}
 
 			term.StopSpinner("sync", t("command.git.sync.success", map[string]string{
