@@ -30,6 +30,8 @@ func newGitSyncCommand() *commands.Command {
 				"command.git.sync.failed_stash_changes":             "Failed to stash changes before syncing branches",
 				"command.git.sync.failed_pop_stash_changes":         "Failed to unstash changes after syncing branches",
 				"command.git.sync.failed_check_uncommitted_changes": "Failed to check for uncommitted changes",
+				"command.git.sync.resolve_conflicts_hint":           "Failed rebase/merge detected. Please resolve the conflicts manually, commit the changes and then run 'git merge/rebase --continue' to continue the rebase/merge process.",
+				"command.git.sync.stash_pop_hint":                   "There are stashed changes that need to be reapplied. Please run 'git stash pop' to reapply the stashed changes.",
 			},
 			"pt-BR": {
 				"git.sync.short_description":                        "Sincroniza a branch atual com a branch principal",
@@ -47,6 +49,8 @@ func newGitSyncCommand() *commands.Command {
 				"command.git.sync.failed_stash_changes":             "Falha ao stashear as mudanças antes de sincronizar as branches",
 				"command.git.sync.failed_pop_stash_changes":         "Falha ao unstashear as mudanças depois de sincronizar as branches",
 				"command.git.sync.failed_check_uncommitted_changes": "Falha ao verificar por mudanças não comitadas",
+				"command.git.sync.resolve_conflicts_hint":           "Rebase/merge com falha detectado. Por favor, resolva os conflitos manualmente, faça o commit das mudanças e então rode 'git merge/rebase --continue' para continuar o processo de rebase/merge.",
+				"command.git.sync.stash_pop_hint":                   "Há mudanças stashed que precisam ser reaplicadas. Por favor, execute 'git stash pop' para reaplicar as mudanças stashed.",
 			},
 		},
 		Handler: func(ctx context.Context, execData *commands.ExecData) error {
@@ -57,6 +61,8 @@ func newGitSyncCommand() *commands.Command {
 
 			log.Info("Starting git sync process")
 			gitService := services.NewGitService().WithLogger(execData.Logger.WithGroup("gitservice"))
+
+			onMain, stashed := false, false
 
 			term.StartSpinner("sync", t("command.git.sync.syncing", map[string]string{
 				"currentBranch": "...",
@@ -96,6 +102,29 @@ func newGitSyncCommand() *commands.Command {
 				return tErr("command.git.sync.failed_check_uncommitted_changes", map[string]string{})
 			}
 
+			// rollback
+			defer func() {
+				if onMain {
+					err = gitService.Checkout(currentBranch)
+					if err != nil {
+						execData.Logger.Error("Failed to checkout back to current branch during rollback", "branch", currentBranch, "error", err.Error())
+						term.Println(ui.Info(t("command.git.sync.failed_checkout_current_branch", map[string]string{})))
+						if stashed {
+							term.Println(ui.Info(t("command.git.sync.stash_pop_hint", map[string]string{})))
+						}
+						return
+					}
+				}
+
+				if stashed {
+					err = unstashChanges(ctx, execData, gitService)
+					if err != nil {
+						term.Println(ui.Info(t("command.git.sync.stash_pop_hint", map[string]string{})))
+						return
+					}
+				}
+			}()
+
 			// stash push
 			if hasUncommittedChanges {
 				term.Println(ui.Lambdaf("git stash push -m \"%s\"", t("command.git.sync.stash_message", map[string]string{})))
@@ -105,6 +134,8 @@ func newGitSyncCommand() *commands.Command {
 					term.StopSpinnerWithError("sync", t("command.git.sync.failed_stash_changes", map[string]string{}))
 					return tErr("command.git.sync.failed_stash_changes", map[string]string{})
 				}
+				stashed = true
+				execData.Logger.Info("Uncommitted changes stashed successfully")
 			}
 
 			// checkout on main
@@ -115,7 +146,9 @@ func newGitSyncCommand() *commands.Command {
 				term.StopSpinnerWithError("sync", t("command.git.sync.failed_checkout_main_branch", map[string]string{}))
 				return tErr("command.git.sync.failed_checkout_main_branch", map[string]string{})
 			}
+			onMain = true
 
+			// pull on main
 			term.Println(ui.Lambdaf("git pull"))
 			err = gitService.Pull()
 			if err != nil {
@@ -124,6 +157,7 @@ func newGitSyncCommand() *commands.Command {
 				return tErr("command.git.sync.failed_pull_main_branch", map[string]string{})
 			}
 
+			// checkout back to current branch
 			term.Println(ui.Lambdaf("git checkout %s", currentBranch))
 			err = gitService.Checkout(currentBranch)
 			if err != nil {
@@ -131,7 +165,9 @@ func newGitSyncCommand() *commands.Command {
 				term.StopSpinnerWithError("sync", t("command.git.sync.failed_checkout_current_branch", map[string]string{}))
 				return tErr("command.git.sync.failed_checkout_current_branch", map[string]string{})
 			}
+			onMain = false
 
+			// check if current branch has new commits compared to main branch
 			hasNewCommits, err := gitService.BranchHasNewCommitsFor(mainBranch)
 			if err != nil {
 				execData.Logger.Error("Failed to check if current branch has new commits compared to main branch", "branch", currentBranch, "mainBranch", mainBranch, "error", err.Error())
@@ -146,14 +182,14 @@ func newGitSyncCommand() *commands.Command {
 					"mainBranch":    mainBranch,
 				})))
 
-				// stash pop
-				if hasUncommittedChanges {
-					term.Println(ui.Lambdaf("git stash pop"))
-					err = gitService.StashPop()
+				// unstash changes if there are stashed changes
+				if stashed {
+					err = unstashChanges(ctx, execData, gitService)
 					if err != nil {
-						execData.Logger.Error("Failed to pop stashed changes", "error", err)
-						term.StopSpinnerWithError("sync", t("command.git.sync.failed_pop_stash_changes", map[string]string{}))
-						return tErr("command.git.sync.failed_pop_stash_changes", map[string]string{})
+						log.Error("Failed to unstash changes after syncing with main branch", "error", err.Error())
+					} else {
+						log.Info("Stashed changes unstashed successfully")
+						stashed = false
 					}
 				}
 
@@ -164,22 +200,31 @@ func newGitSyncCommand() *commands.Command {
 				return nil
 			}
 
+			// rebase current branch with main branch
 			term.Println(ui.Lambdaf("git rebase %s", mainBranch))
 			err = gitService.Rebase(mainBranch)
 			if err != nil {
 				execData.Logger.Error("Failed to rebase current branch with main branch", "branch", currentBranch, "mainBranch", mainBranch, "error", err.Error())
+
+				// abort rebase if it failed
+				abortErr := gitService.RebaseAbort()
+				if abortErr != nil {
+					execData.Logger.Error("Failed to abort rebase after failed rebase attempt", "branch", currentBranch, "mainBranch", mainBranch, "error", abortErr.Error())
+					term.Println(ui.Info(t("command.git.sync.resolve_conflicts_hint", map[string]string{})))
+				}
+
 				term.StopSpinnerWithError("sync", t("command.git.sync.failed_rebase_current_branch", map[string]string{}))
 				return tErr("command.git.sync.failed_rebase_current_branch", map[string]string{})
 			}
 
-			// stash pop
-			if hasUncommittedChanges {
-				term.Println(ui.Lambdaf("git stash pop"))
-				err = gitService.StashPop()
+			// unstash changes if there are stashed changes
+			if stashed {
+				err = unstashChanges(ctx, execData, gitService)
 				if err != nil {
-					execData.Logger.Error("Failed to pop stashed changes", "error", err)
-					term.StopSpinnerWithError("sync", t("command.git.sync.failed_pop_stash_changes", map[string]string{}))
-					return tErr("command.git.sync.failed_pop_stash_changes", map[string]string{})
+					log.Error("Failed to unstash changes after rebasing", "error", err.Error())
+				} else {
+					execData.Logger.Info("Stashed changes unstashed successfully")
+					stashed = false
 				}
 			}
 
@@ -192,4 +237,17 @@ func newGitSyncCommand() *commands.Command {
 			return nil
 		},
 	}
+}
+
+func unstashChanges(ctx context.Context, execData *commands.ExecData, gitService *services.GitService) error {
+	term := execData.Terminal
+	tErr := execData.Translator.Errorf
+
+	term.Println(ui.Lambdaf("git stash pop"))
+	err := gitService.StashPop()
+	if err != nil {
+		execData.Logger.Error("Failed to pop stashed changes", "error", err)
+		return tErr("command.git.sync.failed_pop_stash_changes", map[string]string{})
+	}
+	return nil
 }
