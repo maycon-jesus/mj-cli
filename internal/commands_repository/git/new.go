@@ -66,7 +66,7 @@ func newGitNewCommand() *commands.Command {
 			log.Debug("Main branch detected", "main_branch", mainBranch)
 
 			// Checkout main branch
-			term.StartSpinner("checkout", translator.T("command.git.new.creating_branch", map[string]string{"branch": mainBranch}))
+			term.StartSpinner("checkout", translator.T("command.git.new.creating_branch", map[string]string{"branch": branchName}))
 			err = gitService.Checkout(mainBranch)
 			if err != nil {
 				log.Error("Failed to checkout main branch", "main_branch", mainBranch, "error", err)
