@@ -139,6 +139,17 @@ func (s *GitService) Rebase(baseBranch string) error {
 	return nil
 }
 
+func (s *GitService) RebaseAbort() error {
+	s.logger.Debug("Aborting rebase")
+	err := cmd.RunCommandWithOptions("git rebase --abort", cmd.CommandOptions{})
+	if err != nil {
+		s.logger.Debug("Failed to abort rebase", "error", err)
+		return err
+	}
+	s.logger.Debug("Rebase aborted successfully")
+	return nil
+}
+
 func (s *GitService) BranchHasNewCommitsFor(baseBranch string) (bool, error) {
 	s.logger.Debug("Checking if base branch has new commits not in HEAD", "baseBranch", baseBranch)
 	output, err := cmd.GetCommandOutput(fmt.Sprintf("git rev-list --right-only --count HEAD...%s", baseBranch))
@@ -150,4 +161,38 @@ func (s *GitService) BranchHasNewCommitsFor(baseBranch string) (bool, error) {
 	hasNewCommits := countStr != "0"
 	s.logger.Debug("Checked for new commits successfully", "baseBranch", baseBranch, "hasNewCommits", hasNewCommits)
 	return hasNewCommits, nil
+}
+
+func (s *GitService) HasUncommitedChanges() (bool, error) {
+	s.logger.Debug("Checking for uncommited changes")
+	output, err := cmd.GetCommandOutput("git status --porcelain")
+	if err != nil {
+		s.logger.Debug("Failed to check for uncommited changes", "error", err)
+		return false, err
+	}
+	hasChanges := strings.TrimSpace(output) != ""
+	s.logger.Debug("Checked for uncommited changes successfully", "hasUncommitedChanges", hasChanges)
+	return hasChanges, nil
+}
+
+func (s *GitService) StashPush(stashName string) error {
+	s.logger.Debug("Stashing changes", "stashName", stashName)
+	err := cmd.RunCommandWithOptions(fmt.Sprintf("git stash push -m \"%s\"", stashName), cmd.CommandOptions{})
+	if err != nil {
+		s.logger.Debug("Failed to stash changes", "stashName", stashName, "error", err)
+		return err
+	}
+	s.logger.Debug("Changes stashed successfully", "stashName", stashName)
+	return nil
+}
+
+func (s *GitService) StashPop() error {
+	s.logger.Debug("Popping latest stash")
+	err := cmd.RunCommandWithOptions("git stash pop", cmd.CommandOptions{})
+	if err != nil {
+		s.logger.Debug("Failed to pop latest stash", "error", err)
+		return err
+	}
+	s.logger.Debug("Latest stash popped successfully")
+	return nil
 }
