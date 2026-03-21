@@ -7,6 +7,7 @@ import (
 	config_cmd "github.com/maycon-jesus/mj-cli/internal/commands_repository/config"
 	branch_cmd "github.com/maycon-jesus/mj-cli/internal/commands_repository/git"
 	log_cmd "github.com/maycon-jesus/mj-cli/internal/commands_repository/log"
+	semvercmd "github.com/maycon-jesus/mj-cli/internal/commands_repository/semver"
 )
 
 // Execute executa o comando raiz
@@ -27,6 +28,7 @@ func Execute(app *commands.App) {
 		alias_cmd.NewAliasCommand(),
 		branch_cmd.NewGitCommand(),
 		log_cmd.NewLogCommand(),
+		semvercmd.NewSemverCommand(),
 	)
 
 	// Anexa todos os comandos ao rootCmd
