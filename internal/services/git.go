@@ -175,6 +175,28 @@ func (s *GitService) HasUncommitedChanges() (bool, error) {
 	return hasChanges, nil
 }
 
+func (s *GitService) HasTrackedUncommitedChanges() (bool, error) {
+	s.logger.Debug("Checking for tracked uncommited changes")
+	output, err := cmd.GetCommandOutput("git status --porcelain")
+	if err != nil {
+		s.logger.Debug("Failed to check for tracked uncommited changes", "error", err)
+		return false, err
+	}
+	lines := strings.Split(strings.TrimSpace(output), "\n")
+	for _, line := range lines {
+		if line == "" {
+			continue
+		}
+		status := strings.TrimSpace(line[:2])
+		if status != "??" {
+			s.logger.Debug("Found tracked uncommited change", "line", line)
+			return true, nil
+		}
+	}
+	s.logger.Debug("No tracked uncommited changes found")
+	return false, nil
+}
+
 func (s *GitService) StashPush(stashName string) error {
 	s.logger.Debug("Stashing changes", "stashName", stashName)
 	err := cmd.RunCommandWithOptions(fmt.Sprintf("git stash push -m \"%s\"", stashName), cmd.CommandOptions{})

@@ -95,7 +95,7 @@ func newGitSyncCommand() *commands.Command {
 			execData.Logger.Info("Syncing current branch with main branch", "mainBranch", mainBranch, "currentBranch", currentBranch)
 
 			// check if there are uncommitted changes
-			hasUncommittedChanges, err := gitService.HasUncommitedChanges()
+			hasUncommittedChanges, err := gitService.HasTrackedUncommitedChanges()
 			if err != nil {
 				execData.Logger.Error("Failed to check for uncommitted changes", "error", err)
 				term.StopSpinnerWithError("sync", t("command.git.sync.failed_check_uncommitted_changes", map[string]string{}))
