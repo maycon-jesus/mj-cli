@@ -12,4 +12,6 @@ type App struct {
 	Config     *config.ConfigRegistry
 	Translator *intl.Translator
 	Terminal   *mjterm.Terminal
+	Version    string
+	Name       string
 }

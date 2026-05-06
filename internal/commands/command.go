@@ -162,6 +162,10 @@ func (c *Command) ToCobraCommand(app *App) *cobra.Command {
 		},
 	}
 
+	if cmd.Name() == app.Name {
+		cmd.Version = app.Version
+	}
+
 	// Adiciona as flags
 	for _, flag := range c.Flags {
 		c.addFlag(app, cmd, flag)

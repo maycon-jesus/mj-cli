@@ -49,6 +49,8 @@ func main() {
 		Config:     configRegistry,
 		Translator: translator,
 		Terminal:   term,
+		Version:    appVersion,
+		Name:       appName,
 	}
 
 	cmd.Execute(app)
