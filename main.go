@@ -2,10 +2,12 @@ package main
 
 import (
 	_ "embed"
+	"os"
 
 	"github.com/maycon-jesus/mj-cli/cmd"
 	"github.com/maycon-jesus/mj-cli/internal/commands"
 	"github.com/maycon-jesus/mj-cli/internal/config"
+	"github.com/maycon-jesus/mj-cli/internal/services"
 	"github.com/maycon-jesus/mj-cli/pkg/intl"
 	"github.com/maycon-jesus/mj-cli/pkg/logger"
 	"github.com/maycon-jesus/mj-cli/pkg/mjterm"
@@ -27,6 +29,13 @@ func main() {
 	log := logger.Log
 
 	log.Info("Iniciando aplicação")
+
+	appDataDir, err := os.UserHomeDir()
+	if err != nil {
+		panic(err)
+	}
+	appDataDir = appDataDir + string(os.PathSeparator) + "." + appName
+	log.Debug("appDataDir setado", "appDataDir", appDataDir)
 
 	newViperAdapter := config.NewViperAdapter("mj-cli")
 	newViperAdapter.SetEnvPrefix("MJ_CLI")
@@ -51,6 +60,7 @@ func main() {
 		Terminal:   term,
 		Version:    appVersion,
 		Name:       appName,
+		Database:   services.NewDatabaseService(appDataDir, "app.db").WithLogger(logger.Log.WithGroup("database")),
 	}
 
 	cmd.Execute(app)
