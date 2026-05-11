@@ -46,6 +46,11 @@ func newCubeFace(color CubeColor, size int) *CubeFace {
 	return face
 }
 
+// Layout das peças em cada face:
+//
+//	1 2 3
+//	4 5 6
+//	7 8 9
 type PieceMove struct {
 	SrcFace CubeFaceIndex
 	SrcPos  []int
@@ -54,6 +59,8 @@ type PieceMove struct {
 }
 
 type MoveSet = []PieceMove
+
+type MovesCollection = map[string]MoveSet
 
 func ResolveMoveSet(faces [6]*CubeFace, moveSet MoveSet) {
 	facesSrc := make([]*CubeFace, len(faces))
