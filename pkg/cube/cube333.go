@@ -3,6 +3,7 @@ package cube
 import (
 	"errors"
 	"fmt"
+	"math/rand/v2"
 	"strings"
 
 	"github.com/maycon-jesus/mj-cli/pkg/tint"
@@ -190,4 +191,50 @@ func colorCode(c CubeColor) *tint.Style {
 		})
 	}
 	return tint.NewStyle()
+}
+
+func RandomFromArr[T any](arr []T) (T, int) {
+	n := rand.IntN(len(arr))
+	return arr[n], n
+}
+
+func GenerateScramble333(movesCount int) string {
+	moves := make([]string, 0, movesCount)
+
+	axisMoves := [][]string{
+		{"U", "D"},
+		{"F", "B"},
+		{"L", "R"},
+	}
+	modifiers := []string{"", "2", "'"}
+
+	latestsAxis := make([]int, 0, 2)
+	latestMove := -1
+
+	for len(moves) < movesCount {
+		axis, nAxis := RandomFromArr(axisMoves)
+
+		if len(latestsAxis) == 2 {
+			if latestsAxis[0] == nAxis && latestsAxis[1] == nAxis {
+				continue
+			}
+		}
+
+		move, nMove := RandomFromArr(axis)
+		if nMove == latestMove && latestsAxis[len(latestsAxis)-1] == nAxis {
+			continue
+		}
+
+		modifier, _ := RandomFromArr(modifiers)
+
+		moves = append(moves, move+modifier)
+		latestMove = nMove
+
+		if len(latestsAxis) == 2 {
+			latestsAxis = latestsAxis[1:]
+		}
+		latestsAxis = append(latestsAxis, nAxis)
+	}
+
+	return strings.Join(moves, " ")
 }
