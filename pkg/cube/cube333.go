@@ -107,6 +107,16 @@ func (c *Cube333) ApplyMove(move string) error {
 	return nil
 }
 
+func (c *Cube333) ApplyMoves(moves []string) error {
+	for _, move := range moves {
+		err := c.ApplyMove(move)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (c *Cube333) Print() {
 	fmt.Print(c.Render())
 }
