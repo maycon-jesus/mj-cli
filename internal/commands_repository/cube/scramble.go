@@ -32,15 +32,21 @@ func newCubeScrambleCommand() *commands.Command {
 				"command.cube.scramble.scranble_view_output":        "Visualização do embaralhamento:\n{{view}}",
 			},
 		},
-		Args: []commands.Arg{
+		Flags: []commands.Flag{
 			{
-				Name:           "move_count",
-				DescriptionKey: "command.cube.scramble.args.move_count.description",
-				Required:       true,
+				Name:           "count",
+				Shorthand:      "c",
+				DescriptionKey: "command.cube.scramble.flags.count.description",
+				DefaultValue:   "20",
 			},
 		},
 		Handler: func(ctx context.Context, execData *commands.ExecData) error {
-			moveCount, err := strconv.Atoi(execData.Args[0])
+			moveCountStr, err := execData.Flags.GetString("count")
+			if err != nil {
+				return err
+			}
+
+			moveCount, err := strconv.Atoi(moveCountStr)
 			if err != nil {
 				return err
 			}
