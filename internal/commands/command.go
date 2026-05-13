@@ -67,12 +67,13 @@ type Arg struct {
 }
 
 type ExecData struct {
-	Args       []string
-	Flags      *pflag.FlagSet
-	Config     *config.ConfigRegistry
-	Translator *intl.Translator
-	Terminal   *mjterm.Terminal
-	Logger     *slog.Logger
+	Args          []string
+	Flags         *pflag.FlagSet
+	Config        *config.ConfigRegistry
+	ConfigGeneral config.ConfigModule
+	Translator    *intl.Translator
+	Terminal      *mjterm.Terminal
+	Logger        *slog.Logger
 }
 
 func (c *Command) ToCobraCommand(app *App) *cobra.Command {
@@ -92,12 +93,13 @@ func (c *Command) ToCobraCommand(app *App) *cobra.Command {
 
 			if c.BeforeRun != nil {
 				data := &ExecData{
-					Args:       args,
-					Flags:      cmd.Flags(),
-					Config:     app.Config,
-					Translator: app.Translator,
-					Terminal:   app.Terminal,
-					Logger:     app.Logger.Log,
+					Args:          args,
+					Flags:         cmd.Flags(),
+					Config:        app.Config,
+					ConfigGeneral: app.Config.GetModule("general"),
+					Translator:    app.Translator,
+					Terminal:      app.Terminal,
+					Logger:        app.Logger.Log,
 				}
 
 				err := c.BeforeRun(ctx, data)
@@ -121,12 +123,13 @@ func (c *Command) ToCobraCommand(app *App) *cobra.Command {
 			// Executa o handler principal
 			if c.Handler != nil {
 				data := &ExecData{
-					Args:       args,
-					Flags:      cmd.Flags(),
-					Config:     app.Config,
-					Translator: app.Translator,
-					Terminal:   app.Terminal,
-					Logger:     app.Logger.Log.WithGroup("command"),
+					Args:          args,
+					Flags:         cmd.Flags(),
+					Config:        app.Config,
+					ConfigGeneral: app.Config.GetModule("general"),
+					Translator:    app.Translator,
+					Terminal:      app.Terminal,
+					Logger:        app.Logger.Log.WithGroup("command"),
 				}
 				err := c.Handler(ctx, data)
 				if err != nil {
@@ -143,12 +146,13 @@ func (c *Command) ToCobraCommand(app *App) *cobra.Command {
 			ctx := cmd.Context()
 			if c.AfterRun != nil {
 				data := &ExecData{
-					Args:       args,
-					Flags:      cmd.Flags(),
-					Config:     app.Config,
-					Translator: app.Translator,
-					Terminal:   app.Terminal,
-					Logger:     app.Logger.Log,
+					Args:          args,
+					Flags:         cmd.Flags(),
+					Config:        app.Config,
+					ConfigGeneral: app.Config.GetModule("general"),
+					Translator:    app.Translator,
+					Terminal:      app.Terminal,
+					Logger:        app.Logger.Log,
 				}
 				err := c.AfterRun(ctx, data)
 				if err != nil {
