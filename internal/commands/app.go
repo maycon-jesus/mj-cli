@@ -14,6 +14,7 @@ type App struct {
 	Translator *intl.Translator
 	Terminal   *mjterm.Terminal
 	Database   *services.DatabaseService
+	RootCmd    *Command
 	Version    string
 	Name       string
 }
