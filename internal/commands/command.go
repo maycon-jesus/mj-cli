@@ -24,6 +24,9 @@ type Command struct {
 	// Flags personalizadas
 	Flags []Flag
 
+	// Chaves utilizadas para configurar o comando a partir do arquivo de configuração
+	Configs []Config
+
 	// Handler para execução do comando
 	Handler CommandHandler
 
@@ -66,6 +69,12 @@ type Arg struct {
 	Required       bool
 }
 
+type Config struct {
+	Key            string
+	DescriptionKey string
+	DefaultValue   interface{}
+}
+
 type ExecData struct {
 	Args          []string
 	Flags         *pflag.FlagSet
@@ -90,6 +99,16 @@ func (c *Command) ToCobraCommand(app *App) *cobra.Command {
 		Aliases: c.Aliases,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
+
+			if daddy := cmd.Parent(); daddy != nil {
+				if fn := daddy.PreRunE; fn != nil {
+					app.Logger.Log.Debug("Running PreRunE hook", "command", c.Name, "parent_command", daddy.Name())
+					err := fn(daddy, args)
+					if err != nil {
+						return err
+					}
+				}
+			}
 
 			if c.BeforeRun != nil {
 				data := &ExecData{
@@ -144,6 +163,7 @@ func (c *Command) ToCobraCommand(app *App) *cobra.Command {
 		},
 		PostRunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
+
 			if c.AfterRun != nil {
 				data := &ExecData{
 					Args:          args,
@@ -162,6 +182,17 @@ func (c *Command) ToCobraCommand(app *App) *cobra.Command {
 					return err
 				}
 			}
+
+			if daddy := cmd.Parent(); daddy != nil {
+				if fn := daddy.PostRunE; fn != nil {
+					app.Logger.Log.Debug("Running PostRunE hook", "command", c.Name, "parent_command", daddy.Name())
+					err := fn(daddy, args)
+					if err != nil {
+						return err
+					}
+				}
+			}
+
 			return nil
 		},
 	}
