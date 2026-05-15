@@ -83,6 +83,7 @@ type ExecData struct {
 	Translator    *intl.Translator
 	Terminal      *mjterm.Terminal
 	Logger        *slog.Logger
+	RootCmd       *Command
 }
 
 func (c *Command) ToCobraCommand(app *App) *cobra.Command {
@@ -111,15 +112,7 @@ func (c *Command) ToCobraCommand(app *App) *cobra.Command {
 			}
 
 			if c.BeforeRun != nil {
-				data := &ExecData{
-					Args:          args,
-					Flags:         cmd.Flags(),
-					Config:        app.Config,
-					ConfigGeneral: app.Config.GetModule("general"),
-					Translator:    app.Translator,
-					Terminal:      app.Terminal,
-					Logger:        app.Logger.Log,
-				}
+				data := createExecData(app, cmd, args)
 
 				err := c.BeforeRun(ctx, data)
 				if err != nil {
@@ -141,15 +134,7 @@ func (c *Command) ToCobraCommand(app *App) *cobra.Command {
 
 			// Executa o handler principal
 			if c.Handler != nil {
-				data := &ExecData{
-					Args:          args,
-					Flags:         cmd.Flags(),
-					Config:        app.Config,
-					ConfigGeneral: app.Config.GetModule("general"),
-					Translator:    app.Translator,
-					Terminal:      app.Terminal,
-					Logger:        app.Logger.Log.WithGroup("command"),
-				}
+				data := createExecData(app, cmd, args)
 				err := c.Handler(ctx, data)
 				if err != nil {
 					logPath := app.Logger.FileHandler.Name()
@@ -165,15 +150,7 @@ func (c *Command) ToCobraCommand(app *App) *cobra.Command {
 			ctx := cmd.Context()
 
 			if c.AfterRun != nil {
-				data := &ExecData{
-					Args:          args,
-					Flags:         cmd.Flags(),
-					Config:        app.Config,
-					ConfigGeneral: app.Config.GetModule("general"),
-					Translator:    app.Translator,
-					Terminal:      app.Terminal,
-					Logger:        app.Logger.Log,
-				}
+				data := createExecData(app, cmd, args)
 				err := c.AfterRun(ctx, data)
 				if err != nil {
 					logPath := app.Logger.FileHandler.Name()
@@ -252,5 +229,18 @@ func (c *Command) addFlag(app *App, cmd *cobra.Command, flag Flag) {
 		if err != nil {
 			app.Logger.Log.Error("Failed to mark flag as required", "flag", flag.Name, "command", c.Name, "error", err.Error())
 		}
+	}
+}
+
+func createExecData(app *App, cmd *cobra.Command, args []string) *ExecData {
+	return &ExecData{
+		Args:          args,
+		Flags:         cmd.Flags(),
+		Config:        app.Config,
+		ConfigGeneral: app.Config.GetModule("general"),
+		Translator:    app.Translator,
+		Terminal:      app.Terminal,
+		Logger:        app.Logger.Log,
+		RootCmd:       app.RootCmd,
 	}
 }
