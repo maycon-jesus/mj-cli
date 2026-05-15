@@ -63,3 +63,6 @@ lint:
 # Executar a aplicação
 run:
 	go run $(MAIN_FILE)
+
+install-local:
+	ln -sf $(PWD)/$(BUILD_DIR)/$(BINARY_NAME) ~/.local/bin/$(BINARY_NAME)
