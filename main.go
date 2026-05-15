@@ -6,6 +6,7 @@ import (
 
 	"github.com/maycon-jesus/mj-cli/cmd"
 	"github.com/maycon-jesus/mj-cli/internal/commands"
+	commandsrepository "github.com/maycon-jesus/mj-cli/internal/commands_repository"
 	"github.com/maycon-jesus/mj-cli/internal/config"
 	"github.com/maycon-jesus/mj-cli/internal/services"
 	"github.com/maycon-jesus/mj-cli/pkg/intl"
@@ -61,6 +62,7 @@ func main() {
 		Version:    appVersion,
 		Name:       appName,
 		Database:   services.NewDatabaseService(appDataDir, "app.db").WithLogger(logger.Log.WithGroup("database")),
+		RootCmd:    commandsrepository.NewRootCommand(),
 	}
 
 	cmd.Execute(app)
