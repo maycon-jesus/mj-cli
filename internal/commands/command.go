@@ -24,6 +24,9 @@ type Command struct {
 	// Flags personalizadas
 	Flags []Flag
 
+	// Chaves utilizadas para configurar o comando a partir do arquivo de configuração
+	Configs []Config
+
 	// Handler para execução do comando
 	Handler CommandHandler
 
@@ -66,6 +69,12 @@ type Arg struct {
 	Required       bool
 }
 
+type Config struct {
+	Key            string
+	DescriptionKey string
+	DefaultValue   interface{}
+}
+
 type ExecData struct {
 	Args          []string
 	Flags         *pflag.FlagSet
@@ -91,6 +100,16 @@ func (c *Command) ToCobraCommand(app *App) *cobra.Command {
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
+			if daddy := cmd.Parent(); daddy != nil {
+				if fn := daddy.PreRunE; fn != nil {
+					app.Logger.Log.Debug("Running PreRunE hook", "command", c.Name, "parent_command", daddy.Name())
+					err := fn(daddy, args)
+					if err != nil {
+						return err
+					}
+				}
+			}
+
 			if c.BeforeRun != nil {
 				data := &ExecData{
 					Args:          args,
@@ -107,8 +126,8 @@ func (c *Command) ToCobraCommand(app *App) *cobra.Command {
 					logPath := app.Logger.FileHandler.Name()
 					app.Logger.Log.Error("Error in BeforeRun hook", "command", c.Name, "error", err.Error())
 					app.Terminal.Printf("An error occurred in the BeforeRun hook. Please check the log file for details: %s\n", logPath)
+					return err
 				}
-				return err
 			}
 			return nil
 		},
@@ -144,6 +163,7 @@ func (c *Command) ToCobraCommand(app *App) *cobra.Command {
 		},
 		PostRunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
+
 			if c.AfterRun != nil {
 				data := &ExecData{
 					Args:          args,
@@ -159,9 +179,20 @@ func (c *Command) ToCobraCommand(app *App) *cobra.Command {
 					logPath := app.Logger.FileHandler.Name()
 					app.Logger.Log.Error("Error in AfterRun hook", "command", c.Name, "error", err.Error())
 					app.Terminal.Printf("An error occurred in the AfterRun hook. Please check the log file for details: %s\n", logPath)
+					return err
 				}
-				return err
 			}
+
+			if daddy := cmd.Parent(); daddy != nil {
+				if fn := daddy.PostRunE; fn != nil {
+					app.Logger.Log.Debug("Running PostRunE hook", "command", c.Name, "parent_command", daddy.Name())
+					err := fn(daddy, args)
+					if err != nil {
+						return err
+					}
+				}
+			}
+
 			return nil
 		},
 	}
