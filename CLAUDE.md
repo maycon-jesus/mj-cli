@@ -76,7 +76,7 @@ JSON-structured logger built on `log/slog` with custom handlers:
 ### Configuration System
 - Uses Viper adapter (`internal/config/`) with registry pattern
 - Modules registered by name (e.g. `"general"`); accessed via `execData.Config.GetModule("general")`
-- Config files: `general.toml` in project dir (`.`) or `~/.mj-cli/` (user), format is TOML
+- Config file is `config.yaml`, searched in the project dir (`.`) then `~/.mj-cli/` (user); format is YAML. `config generate` emits YAML via `yaml.Marshal`
 - Environment override prefix: `MJ_CLI_` (dots replaced with underscores: `MJ_CLI_LANG`)
 - Flags can be bound to config keys via `FlagConfigRegistry` on the `Flag` struct
 - Config persists automatically on exit (WriteConfig in `main.go`)
