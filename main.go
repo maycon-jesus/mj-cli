@@ -67,11 +67,6 @@ func main() {
 
 	cmd.Execute(app)
 
-	if err := newViperAdapter.WriteConfig(); err != nil {
-		log.Error("Falha ao salvar configuração", "error", err.Error())
-		panic(err)
-	}
-
 	log.Debug("Configuração salva")
 	log.Info("Aplicação finalizada")
 }
