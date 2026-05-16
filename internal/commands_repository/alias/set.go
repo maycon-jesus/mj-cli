@@ -31,9 +31,9 @@ func newAliasSetCommand() *commands.Command {
 			},
 		},
 		Handler: func(ctx context.Context, execData *commands.ExecData) error {
-			key := fmt.Sprintf("aliases.%s", execData.Args[0])
-			execData.Config.GetModule("general").Set(key, execData.Args[1])
-			execData.Config.GetModule("general").WriteConfig()
+			key := fmt.Sprintf("command.alias.aliases.%s", execData.Args[0])
+			execData.ConfigGeneral.Set(key, execData.Args[1])
+			execData.ConfigGeneral.WriteConfig()
 			execData.Translator.Println("alias.set.success", map[string]string{"name": execData.Args[0], "command": execData.Args[1]})
 			return nil
 		},

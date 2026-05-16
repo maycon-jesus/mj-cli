@@ -29,8 +29,8 @@ func newAliasRunCommand() *commands.Command {
 			},
 		},
 		Handler: func(ctx context.Context, execData *commands.ExecData) error {
-			key := fmt.Sprintf("aliases.%s", execData.Args[0])
-			command := execData.Config.GetModule("general").GetString(key)
+			key := fmt.Sprintf("command.alias.aliases.%s", execData.Args[0])
+			command := execData.ConfigGeneral.GetString(key)
 
 			variables := make(map[string]string)
 

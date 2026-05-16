@@ -28,8 +28,8 @@ func newAliasViewCommand() *commands.Command {
 			},
 		},
 		Handler: func(ctx context.Context, execData *commands.ExecData) error {
-			key := fmt.Sprintf("aliases.%s", execData.Args[0])
-			command := execData.Config.GetModule("general").GetString(key)
+			key := fmt.Sprintf("command.alias.aliases.%s", execData.Args[0])
+			command := execData.ConfigGeneral.GetString(key)
 
 			if command == "" {
 				execData.Translator.Println("alias.view.not_found", map[string]string{"name": execData.Args[0]})

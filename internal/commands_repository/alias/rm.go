@@ -30,16 +30,16 @@ func newAliasRmCommand() *commands.Command {
 			{Name: "name", DescriptionKey: "command.alias.rm.arg.name", Required: true},
 		},
 		Handler: func(ctx context.Context, execData *commands.ExecData) error {
-			key := fmt.Sprintf("aliases.%s", execData.Args[0])
-			command := execData.Config.GetModule("general").GetString(key)
+			key := fmt.Sprintf("command.alias.aliases.%s", execData.Args[0])
+			command := execData.ConfigGeneral.GetString(key)
 
 			if command == "" {
 				execData.Translator.Println("alias.rm.not_found", map[string]string{"name": execData.Args[0]})
 				return nil
 			}
 
-			execData.Config.GetModule("general").Set(key, nil)
-			execData.Config.GetModule("general").WriteConfig()
+			execData.ConfigGeneral.Set(key, nil)
+			execData.ConfigGeneral.WriteConfig()
 			execData.Translator.Println("alias.rm.removed", map[string]string{"name": execData.Args[0]})
 			return nil
 		},

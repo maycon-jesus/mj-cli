@@ -25,8 +25,13 @@ func newAliasLsCommand() *commands.Command {
 			},
 		},
 		Handler: func(ctx context.Context, execData *commands.ExecData) error {
-			settings := execData.Config.GetModule("general").AllSettings()
-			aliases, ok := settings["aliases"].(map[string]interface{})
+			settings := execData.ConfigGeneral.Get("command.alias.aliases")
+			if settings == nil {
+				execData.Translator.Println("alias.ls.not_found", map[string]string{})
+				return nil
+			}
+
+			aliases, ok := settings.(map[string]interface{})
 			if !ok || len(aliases) == 0 {
 				execData.Translator.Println("alias.ls.not_found", map[string]string{})
 				return nil
