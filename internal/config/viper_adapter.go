@@ -31,7 +31,7 @@ func setDefaultViperConfig(v *viper.Viper, appName string) {
 	v.AddConfigPath(".")
 	v.AddConfigPath(configDirHome)
 	v.SetConfigName("config")
-	v.SetConfigType("toml")
+	v.SetConfigType("yaml")
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	v.AutomaticEnv()
 }
