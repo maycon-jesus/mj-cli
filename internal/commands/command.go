@@ -25,7 +25,7 @@ type Command struct {
 	Flags []Flag
 
 	// Chaves utilizadas para configurar o comando a partir do arquivo de configuração
-	Configs []Config
+	Configs map[string]Config
 
 	// Handler para execução do comando
 	Handler CommandHandler
@@ -70,7 +70,6 @@ type Arg struct {
 }
 
 type Config struct {
-	Key            string
 	DescriptionKey string
 	DefaultValue   interface{}
 }
@@ -88,6 +87,7 @@ type ExecData struct {
 
 func (c *Command) ToCobraCommand(app *App) *cobra.Command {
 	app.Logger.Log.Debug("Converting custom command to Cobra command", "command", c.Name)
+
 	// Adiciona traduções ao tradutor
 	app.Translator.AddMessagesBulk(c.Translations)
 

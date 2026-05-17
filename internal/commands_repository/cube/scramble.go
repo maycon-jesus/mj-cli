@@ -32,9 +32,8 @@ func newCubeScrambleCommand() *commands.Command {
 				"command.cube.scramble.scranble_view_output":   "Visualização do embaralhamento:\n{{view}}",
 			},
 		},
-		Configs: []commands.Config{
-			{
-				Key:            "command.cube.scramble.size",
+		Configs: map[string]commands.Config{
+			"command.cube.scramble.size": {
 				DescriptionKey: "command.cube.scramble.flags.size.description",
 				DefaultValue:   20,
 			},

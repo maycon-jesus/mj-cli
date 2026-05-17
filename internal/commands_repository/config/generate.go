@@ -41,8 +41,8 @@ func makeObject(cmd *commands.Command) map[string]interface{} {
 	obj := make(map[string]interface{})
 
 	if cmd.Configs != nil {
-		for _, config := range cmd.Configs {
-			configMap := utils.CreateDeepMap(strings.Split(config.Key, "."), config.DefaultValue)
+		for key, config := range cmd.Configs {
+			configMap := utils.CreateDeepMap(strings.Split(key, "."), config.DefaultValue)
 			utils.MergeDeepMaps(obj, configMap)
 		}
 	}
