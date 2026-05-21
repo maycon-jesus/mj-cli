@@ -117,8 +117,11 @@ folha na árvore YAML sem ambiguidade.
 Ao chamar `AddEntry` com um persister associado:
 
 1. O manager consulta `persister.Get(key)`.
-2. Se a chave existir no backend, seu valor vira o `Value` inicial da entrada.
-3. Caso contrário, `Value` fica `nil` e `GetEntry` devolverá o `DefaultValue`.
+2. Se a chave existir no backend, seu valor vira o `Value` inicial da entrada
+   (mesmo que esse valor seja `nil` — nesse caso `GetEntry` ainda cai no
+   `DefaultValue` graças ao fallback de `effective()`).
+3. Se a chave não existir no backend, `Value` fica `nil` e `GetEntry` devolverá
+   o `DefaultValue`.
 
 Isso permite registrar entradas em código e ainda assim respeitar valores já
 gravados no arquivo de configuração, desde que `Load()` tenha sido chamado no
@@ -126,4 +129,20 @@ persister antes do `AddEntry`.
 
 ## Testes
 
-Atualmente o pacote não possui testes automatizados.
+```bash
+go test ./pkg/config/ -v
+```
+
+Os testes cobrem:
+
+- **`Entry.effective()`** — prioridade entre `Value` e `DefaultValue`,
+  incluindo casos delicados (`false`, `0`, ambos `nil`).
+- **`ConfigManager`** — construção, encadeamento de `WithPersister`,
+  validação de hierarquia em `AddEntry` (duplicata, ancestral folha,
+  descendente existente, irmãos aninhados), carga inicial via persister,
+  `GetEntry`/`SetEntry`, e propagação/erros de `Save`/`Load`. Um
+  `fakePersister` em memória evita acesso a disco.
+- **`YamlModule`** — gravação plana e aninhada, descrição como head
+  comment, ordem alfabética determinística, uso do `DefaultValue` quando
+  `Value` é `nil`, erros em paths inválidos, e roundtrip Save→Load para
+  tipos variados (string, int, float, bool, slices, nil).
