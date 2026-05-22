@@ -1,11 +1,11 @@
 ---
 name: commit-message
-description: Analisa os arquivos no stage do git (git diff --staged) e gera uma mensagem de commit seguindo o padrão Conventional Commits em pt-BR. Use quando o usuário pedir para gerar/sugerir/criar uma mensagem de commit a partir do que está staged.
+description: Analisa os arquivos no stage do git (git diff --staged) e gera duas versões de mensagem de commit (uma curta e uma longa completa) seguindo o padrão Conventional Commits em pt-BR. Use quando o usuário pedir para gerar/sugerir/criar uma mensagem de commit a partir do que está staged.
 ---
 
 # commit-message
 
-Gera uma mensagem de commit no padrão **Conventional Commits** em **português do Brasil (pt-BR)** a partir das mudanças que estão no stage do git.
+Gera **duas versões** de mensagem de commit no padrão **Conventional Commits** em **português do Brasil (pt-BR)** a partir das mudanças que estão no stage do git: uma **curta** (só o título) e uma **longa** (título + corpo + rodapés).
 
 ## Quando usar
 
@@ -32,19 +32,33 @@ Invoque esta skill quando o usuário pedir para:
    - **Breaking change**: se houver remoção/alteração incompatível de API pública, marcar com `!` após o tipo/escopo e/ou adicionar rodapé `BREAKING CHANGE:`
    - **Descrição**: foco no **porquê**, não no o que. Imperativo, minúsculo, sem ponto final, ≤ 72 caracteres na primeira linha.
 
-4. **Formato de saída** (apresentar ao usuário antes de commitar):
+4. **Formato de saída** — apresente **sempre as duas versões** ao usuário antes de commitar:
+
+   **Versão curta** — apenas a linha de título, sem corpo. Para commits rápidos.
+
+   ```
+   <tipo>(<escopo opcional>): <descrição curta em pt-BR>
+   ```
+
+   **Versão longa** — título + corpo explicando o porquê + rodapés. Para commits que merecem contexto.
 
    ```
    <tipo>(<escopo opcional>): <descrição curta em pt-BR>
 
-   <corpo opcional explicando o porquê — quebre em 72 colunas>
+   <corpo explicando o porquê — quebre em 72 colunas>
 
    <rodapé opcional: BREAKING CHANGE: ... / Refs: #123>
    ```
 
+   Apresente as duas sob títulos claros (ex.: `### Curta` e `### Longa`), cada uma
+   em seu próprio bloco de código para facilitar a cópia. A linha de título pode ser
+   idêntica nas duas versões; a longa apenas acrescenta corpo/rodapés. Se houver
+   `BREAKING CHANGE`, inclua o `!` no tipo/escopo em **ambas** as versões e o rodapé
+   na versão longa.
+
 5. **Múltiplas mudanças não relacionadas** — se o stage misturar mudanças que mereceriam commits separados, avise o usuário e sugira dividir (`git reset` + re-staging seletivo). Não force uma única mensagem genérica.
 
-6. **Não commitar automaticamente.** Mostre a mensagem proposta e aguarde aprovação. Só execute `git commit` se o usuário disser explicitamente para commitar.
+6. **Não commitar automaticamente.** Mostre as duas mensagens propostas e aguarde aprovação. Se o usuário pedir para commitar sem dizer qual versão, pergunte qual usar (curta ou longa). Só execute `git commit` se o usuário disser explicitamente para commitar.
 
 ## Regras de estilo (pt-BR)
 
@@ -56,9 +70,15 @@ Invoque esta skill quando o usuário pedir para:
 
 ## Exemplos
 
+Cada exemplo mostra as duas versões geradas para o mesmo conjunto de mudanças.
+
+**Curta**
+
 ```
-feat(cube): adicionar suporte ao movimento M no cubo 3x3
+fix(config): corrigir leitura do diretório ~/.mj-cli quando HOME não está definido
 ```
+
+**Longa**
 
 ```
 fix(config): corrigir leitura do diretório ~/.mj-cli quando HOME não está definido
@@ -67,8 +87,21 @@ A leitura assumia que os.UserHomeDir() nunca falharia, o que quebrava
 em ambientes containerizados sem HOME exportado.
 ```
 
+---
+
+**Curta**
+
 ```
 refactor(cmd)!: trocar count de argumento posicional para flag --count
+```
+
+**Longa**
+
+```
+refactor(cmd)!: trocar count de argumento posicional para flag --count
+
+Alinha a interface de `cube scramble` com as demais subcomandos, que
+já usam flags nomeadas para parâmetros opcionais.
 
 BREAKING CHANGE: o argumento posicional `count` em `cube scramble`
 foi removido. Use `--count` (ou `-c`).
