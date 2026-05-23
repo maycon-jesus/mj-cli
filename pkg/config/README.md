@@ -18,10 +18,10 @@ cm.AddEntry("debug", "Habilita modo de debug", false)
 cm.AddEntry("general.lang", "Idioma da UI", "pt-BR")
 cm.AddEntry("git.signing.enabled", "Assinar commits", false)
 
-cm.SetEntry("debug", true)
-cm.SetEntry("general.lang", "en")
+cm.Set("debug", true)
+cm.Set("general.lang", "en")
 
-value, _ := cm.GetEntry("general.lang") // "en"
+value, _ := cm.Get("general.lang") // "en"
 
 if err := cm.Save(); err != nil {
     log.Fatal(err)
@@ -42,7 +42,7 @@ type Entry struct {
 }
 ```
 
-O valor "efetivo" devolvido por `GetEntry` é `Value` quando não-nulo, caindo
+O valor "efetivo" devolvido por `Get` é `Value` quando não-nulo, caindo
 para `DefaultValue` caso contrário.
 
 ### ConfigManager
@@ -55,12 +55,33 @@ opcional.
 | `NewConfigManager()` | Cria um manager sem persister |
 | `WithPersister(p)` | Associa um `PersistModule`; retorna o próprio manager para encadear |
 | `AddEntry(key, desc, default)` | Registra uma nova chave; carrega o valor do persister se já existir |
-| `GetEntry(key)` | Retorna o valor efetivo (ou `DefaultValue`) e se a chave existe |
-| `SetEntry(key, value)` | Atualiza o valor de uma chave **já registrada**; retorna `false` se não existir |
+| `Get(key)` | Retorna o valor efetivo (ou `DefaultValue`) e se a chave existe |
+| `Set(key, value)` | Atualiza o valor de uma chave **já registrada**; retorna `false` se não existir |
+| `Has(key)` | Indica se uma chave está registrada (independente do valor armazenado) |
 | `Save()` | Persiste todas as entradas via o persister configurado |
 | `Load()` | Recarrega o estado do persister |
 
 `Save` e `Load` retornam erro se nenhum persister foi configurado.
+
+`Has` checa existência exata da chave registrada — não considera ancestrais.
+Por exemplo, com `git.branch` registrado, `Has("git.branch")` retorna `true`
+mas `Has("git")` retorna `false`.
+
+### ReadOnlyConfig
+
+Interface mínima exposta para consumidores que só precisam **ler** a
+configuração, sem poder mutá-la ou persistir:
+
+```go
+type ReadOnlyConfig interface {
+    Get(key string) (any, bool)
+    Has(key string) bool
+}
+```
+
+`*ConfigManager` satisfaz `ReadOnlyConfig`, então basta tipar o parâmetro da
+função consumidora com essa interface para impedir chamadas a `Set`, `Save`,
+`AddEntry` etc.
 
 ### PersistModule
 
@@ -118,9 +139,9 @@ Ao chamar `AddEntry` com um persister associado:
 
 1. O manager consulta `persister.Get(key)`.
 2. Se a chave existir no backend, seu valor vira o `Value` inicial da entrada
-   (mesmo que esse valor seja `nil` — nesse caso `GetEntry` ainda cai no
+   (mesmo que esse valor seja `nil` — nesse caso `Get` ainda cai no
    `DefaultValue` graças ao fallback de `effective()`).
-3. Se a chave não existir no backend, `Value` fica `nil` e `GetEntry` devolverá
+3. Se a chave não existir no backend, `Value` fica `nil` e `Get` devolverá
    o `DefaultValue`.
 
 Isso permite registrar entradas em código e ainda assim respeitar valores já
@@ -140,8 +161,9 @@ Os testes cobrem:
 - **`ConfigManager`** — construção, encadeamento de `WithPersister`,
   validação de hierarquia em `AddEntry` (duplicata, ancestral folha,
   descendente existente, irmãos aninhados), carga inicial via persister,
-  `GetEntry`/`SetEntry`, e propagação/erros de `Save`/`Load`. Um
-  `fakePersister` em memória evita acesso a disco.
+  `Get`/`Set`/`Has` (incluindo o caso em que `Has` não confunde chave com
+  ancestral) e propagação/erros de `Save`/`Load`. Um `fakePersister` em
+  memória evita acesso a disco.
 - **`YamlModule`** — gravação plana e aninhada, descrição como head
   comment, ordem alfabética determinística, uso do `DefaultValue` quando
   `Value` é `nil`, erros em paths inválidos, e roundtrip Save→Load para

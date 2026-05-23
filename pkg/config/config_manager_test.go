@@ -114,12 +114,12 @@ func TestConfigManager_AddEntry(t *testing.T) {
 		if err := cm.AddEntry("foo", "a foo", "bar"); err != nil {
 			t.Fatalf("AddEntry returned error: %v", err)
 		}
-		got, ok := cm.GetEntry("foo")
+		got, ok := cm.Get("foo")
 		if !ok {
 			t.Fatal("entry not found after AddEntry")
 		}
 		if got != "bar" {
-			t.Errorf("GetEntry = %v, want 'bar'", got)
+			t.Errorf("Get = %v, want 'bar'", got)
 		}
 	})
 
@@ -202,12 +202,12 @@ func TestConfigManager_AddEntry(t *testing.T) {
 			t.Fatalf("AddEntry returned error: %v", err)
 		}
 
-		got, ok := cm.GetEntry("general.lang")
+		got, ok := cm.Get("general.lang")
 		if !ok {
 			t.Fatal("entry not found")
 		}
 		if got != "en" {
-			t.Errorf("GetEntry = %v, want 'en' (loaded from persister)", got)
+			t.Errorf("Get = %v, want 'en' (loaded from persister)", got)
 		}
 	})
 
@@ -219,12 +219,12 @@ func TestConfigManager_AddEntry(t *testing.T) {
 			t.Fatalf("AddEntry returned error: %v", err)
 		}
 
-		got, ok := cm.GetEntry("general.lang")
+		got, ok := cm.Get("general.lang")
 		if !ok {
 			t.Fatal("entry not found")
 		}
 		if got != "pt-BR" {
-			t.Errorf("GetEntry = %v, want 'pt-BR' (default)", got)
+			t.Errorf("Get = %v, want 'pt-BR' (default)", got)
 		}
 	})
 
@@ -242,17 +242,17 @@ func TestConfigManager_AddEntry(t *testing.T) {
 		if entry.Value != nil {
 			t.Errorf("entry.Value = %v, want nil (persister forneceu nil)", entry.Value)
 		}
-		got, _ := cm.GetEntry("k")
+		got, _ := cm.Get("k")
 		if got != "fallback" {
-			t.Errorf("GetEntry = %v, want 'fallback' (default usado quando Value é nil)", got)
+			t.Errorf("Get = %v, want 'fallback' (default usado quando Value é nil)", got)
 		}
 	})
 }
 
-func TestConfigManager_GetEntry(t *testing.T) {
+func TestConfigManager_Get(t *testing.T) {
 	t.Run("chave inexistente retorna false", func(t *testing.T) {
 		cm := NewConfigManager()
-		v, ok := cm.GetEntry("missing")
+		v, ok := cm.Get("missing")
 		if ok {
 			t.Error("ok should be false for missing key")
 		}
@@ -266,7 +266,7 @@ func TestConfigManager_GetEntry(t *testing.T) {
 		if err := cm.AddEntry("k", "", "default-val"); err != nil {
 			t.Fatalf("AddEntry returned error: %v", err)
 		}
-		v, ok := cm.GetEntry("k")
+		v, ok := cm.Get("k")
 		if !ok {
 			t.Fatal("entry should exist")
 		}
@@ -275,24 +275,24 @@ func TestConfigManager_GetEntry(t *testing.T) {
 		}
 	})
 
-	t.Run("retorna value após SetEntry", func(t *testing.T) {
+	t.Run("retorna value após Set", func(t *testing.T) {
 		cm := NewConfigManager()
 		if err := cm.AddEntry("k", "", "default-val"); err != nil {
 			t.Fatalf("AddEntry returned error: %v", err)
 		}
-		cm.SetEntry("k", "updated")
-		v, _ := cm.GetEntry("k")
+		cm.Set("k", "updated")
+		v, _ := cm.Get("k")
 		if v != "updated" {
 			t.Errorf("value = %v, want 'updated'", v)
 		}
 	})
 }
 
-func TestConfigManager_SetEntry(t *testing.T) {
+func TestConfigManager_Set(t *testing.T) {
 	t.Run("retorna false para chave inexistente", func(t *testing.T) {
 		cm := NewConfigManager()
-		if ok := cm.SetEntry("missing", 123); ok {
-			t.Error("SetEntry should return false for missing key")
+		if ok := cm.Set("missing", 123); ok {
+			t.Error("Set should return false for missing key")
 		}
 	})
 
@@ -301,10 +301,10 @@ func TestConfigManager_SetEntry(t *testing.T) {
 		if err := cm.AddEntry("k", "", "old"); err != nil {
 			t.Fatalf("AddEntry returned error: %v", err)
 		}
-		if ok := cm.SetEntry("k", "new"); !ok {
-			t.Error("SetEntry should return true for existing key")
+		if ok := cm.Set("k", "new"); !ok {
+			t.Error("Set should return true for existing key")
 		}
-		v, _ := cm.GetEntry("k")
+		v, _ := cm.Get("k")
 		if v != "new" {
 			t.Errorf("value = %v, want 'new'", v)
 		}
@@ -315,7 +315,7 @@ func TestConfigManager_SetEntry(t *testing.T) {
 		if err := cm.AddEntry("k", "desc", "default"); err != nil {
 			t.Fatalf("AddEntry returned error: %v", err)
 		}
-		cm.SetEntry("k", "current")
+		cm.Set("k", "current")
 
 		entry := cm.entries["k"]
 		if entry.DefaultValue != "default" {
@@ -323,6 +323,63 @@ func TestConfigManager_SetEntry(t *testing.T) {
 		}
 		if entry.Description != "desc" {
 			t.Errorf("Description = %v, want 'desc'", entry.Description)
+		}
+	})
+}
+
+func TestConfigManager_Has(t *testing.T) {
+	t.Run("retorna false para chave inexistente", func(t *testing.T) {
+		cm := NewConfigManager()
+		if cm.Has("missing") {
+			t.Error("Has should return false for missing key")
+		}
+	})
+
+	t.Run("retorna true para chave registrada via AddEntry", func(t *testing.T) {
+		cm := NewConfigManager()
+		if err := cm.AddEntry("k", "", "default"); err != nil {
+			t.Fatalf("AddEntry returned error: %v", err)
+		}
+		if !cm.Has("k") {
+			t.Error("Has should return true for registered key")
+		}
+	})
+
+	t.Run("retorna true mesmo quando Value é nil (apenas DefaultValue definido)", func(t *testing.T) {
+		cm := NewConfigManager()
+		if err := cm.AddEntry("k", "", "default"); err != nil {
+			t.Fatalf("AddEntry returned error: %v", err)
+		}
+		// Value permanece nil; Has checa existência, não conteúdo.
+		if cm.entries["k"].Value != nil {
+			t.Fatalf("precondição: Value deveria ser nil, got %v", cm.entries["k"].Value)
+		}
+		if !cm.Has("k") {
+			t.Error("Has should return true even when Value is nil")
+		}
+	})
+
+	t.Run("retorna true após Set", func(t *testing.T) {
+		cm := NewConfigManager()
+		if err := cm.AddEntry("k", "", "default"); err != nil {
+			t.Fatalf("AddEntry returned error: %v", err)
+		}
+		cm.Set("k", "updated")
+		if !cm.Has("k") {
+			t.Error("Has should return true after Set on existing key")
+		}
+	})
+
+	t.Run("não confunde chaves aninhadas com ancestrais", func(t *testing.T) {
+		cm := NewConfigManager()
+		if err := cm.AddEntry("git.branch", "", "main"); err != nil {
+			t.Fatalf("AddEntry returned error: %v", err)
+		}
+		if cm.Has("git") {
+			t.Error("Has should return false for ancestor of a registered key")
+		}
+		if !cm.Has("git.branch") {
+			t.Error("Has should return true for the exact registered key")
 		}
 	})
 }
@@ -342,7 +399,7 @@ func TestConfigManager_Save(t *testing.T) {
 		if err := cm.AddEntry("a", "", 1); err != nil {
 			t.Fatalf("AddEntry returned error: %v", err)
 		}
-		cm.SetEntry("a", 2)
+		cm.Set("a", 2)
 
 		if err := cm.Save(); err != nil {
 			t.Fatalf("Save returned error: %v", err)

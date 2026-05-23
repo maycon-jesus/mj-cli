@@ -78,7 +78,7 @@ func (cm *ConfigManager) AddEntry(key string, description string, defaultValue a
 	return nil
 }
 
-func (cm *ConfigManager) GetEntry(key string) (any, bool) {
+func (cm *ConfigManager) Get(key string) (any, bool) {
 	entry, exists := cm.entries[key]
 	if !exists {
 		return nil, false
@@ -86,7 +86,7 @@ func (cm *ConfigManager) GetEntry(key string) (any, bool) {
 	return entry.effective(), true
 }
 
-func (cm *ConfigManager) SetEntry(key string, value any) bool {
+func (cm *ConfigManager) Set(key string, value any) bool {
 	entry, exists := cm.entries[key]
 	if !exists {
 		return false
@@ -94,6 +94,11 @@ func (cm *ConfigManager) SetEntry(key string, value any) bool {
 	entry.Value = value
 	cm.entries[key] = entry
 	return true
+}
+
+func (cm *ConfigManager) Has(key string) bool {
+	_, exists := cm.entries[key]
+	return exists
 }
 
 func (cm *ConfigManager) Save() error {
