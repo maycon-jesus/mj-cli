@@ -2,7 +2,6 @@ package alias_cmd
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/maycon-jesus/mj-cli/internal/commands"
 	"github.com/maycon-jesus/mj-cli/pkg/intl"
@@ -30,17 +29,23 @@ func newAliasRmCommand() *commands.Command {
 			{Name: "name", DescriptionKey: "command.alias.rm.arg.name", Required: true},
 		},
 		Handler: func(ctx context.Context, execData *commands.ExecData) error {
-			key := fmt.Sprintf("aliases.%s", execData.Args[0])
-			command := execData.Config.GetModule("general").GetString(key)
+			name := execData.Args[0]
 
-			if command == "" {
-				execData.Translator.Println("alias.rm.not_found", map[string]string{"name": execData.Args[0]})
+			settings, _ := execData.Config.Get("command.alias.aliases")
+			aliases, ok := settings.(map[string]interface{})
+			if !ok || aliases == nil {
+				execData.Translator.Println("alias.rm.not_found", map[string]string{"name": name})
 				return nil
 			}
 
-			execData.Config.GetModule("general").Set(key, nil)
-			execData.Config.GetModule("general").WriteConfig()
-			execData.Translator.Println("alias.rm.removed", map[string]string{"name": execData.Args[0]})
+			if _, exists := aliases[name]; !exists {
+				execData.Translator.Println("alias.rm.not_found", map[string]string{"name": name})
+				return nil
+			}
+
+			delete(aliases, name)
+			execData.Config.Set("command.alias.aliases", aliases)
+			execData.Translator.Println("alias.rm.removed", map[string]string{"name": name})
 			return nil
 		},
 	}

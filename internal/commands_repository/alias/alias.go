@@ -19,5 +19,8 @@ func NewAliasCommand() *commands.Command {
 				"command.alias.short_description": "Gerenciar aliases de comandos",
 			},
 		},
+		Configs: map[string]commands.Config{
+			"command.alias.aliases": {},
+		},
 	}
 }

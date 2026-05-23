@@ -1,5 +1,0 @@
-lang = 'pt-BR'
-
-[aliases]
-gc = 'echo "{{1}}"'
-teste = 'op.exe read "op://Personal/qffeayw5oz2l7e6il3kexxiscq/username"'

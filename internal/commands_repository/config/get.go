@@ -12,47 +12,38 @@ func newGetCommand() *commands.Command {
 	return &commands.Command{
 		Name: "get",
 		Args: []commands.Arg{
-			{Name: "registry", DescriptionKey: "command.config.get.arg.registry", Required: true},
-			{Name: "key", DescriptionKey: "command.config.get.arg.key", Required: false},
+			{Name: "key", DescriptionKey: "command.config.get.arg.key", Required: true},
 		},
 		ShortDescriptionKey: "command.config.get.short_description",
 		Translations: intl.Translations{
 			"en": {
 				"command.config.get.short_description": "Get a configuration value",
-				"command.config.get.arg.registry":      "The configuration registry to get",
-				"command.config.get.arg.key":           "The configuration key to get",
-				"config.get.invalid_args":              "expected at most 2 arguments, got {{count}}",
-				"config.get.name_registry":             "All settings in registry '{{registry}}':",
+				"command.config.get.arg.key":           "The configuration key to get (dot-separated)",
+				"config.get.invalid_args":              "expected 1 argument, got {{count}}",
+				"config.get.not_found":                 "configuration key '{{key}}' is not registered",
 			},
 			"pt-BR": {
 				"command.config.get.short_description": "Obter um valor de configuração",
-				"command.config.get.arg.registry":      "O registro de configuração a ser obtido",
-				"command.config.get.arg.key":           "A chave de configuração a ser obtida",
-				"config.get.invalid_args":              "esperado no máximo 2 argumentos, recebidos {{count}}",
-				"config.get.name_registry":             "Todas as configurações do registro '{{registry}}':",
+				"command.config.get.arg.key":           "A chave de configuração a ser obtida (separada por pontos)",
+				"config.get.invalid_args":              "esperado 1 argumento, recebidos {{count}}",
+				"config.get.not_found":                 "chave de configuração '{{key}}' não está registrada",
 			},
 		},
 		BeforeRun: func(ctx context.Context, execData *commands.ExecData) error {
-			if len(execData.Args) > 2 {
-				return fmt.Errorf("expected at most 2 arguments, got %d", len(execData.Args))
+			if len(execData.Args) != 1 {
+				return execData.Translator.Errorf("config.get.invalid_args", map[string]string{
+					"count": fmt.Sprintf("%d", len(execData.Args)),
+				})
 			}
 			return nil
 		},
-		Handler: func(ctx context.Context, data *commands.ExecData) error {
-			switch len(data.Args) {
-			case 1:
-				settings := data.Config.GetModule(data.Args[0]).AllSettings()
-				fmt.Println(data.Translator.T("config.get.name_registry", map[string]string{"registry": data.Args[0]}))
-				for k, v := range settings {
-					fmt.Printf("%s: %v\n", k, v)
-				}
-			case 2:
-				value := data.Config.GetModule(data.Args[0]).GetString(data.Args[1])
-				fmt.Println(value)
-			default:
-				return fmt.Errorf("expected at most 2 arguments, got %d", len(data.Args))
+		Handler: func(ctx context.Context, execData *commands.ExecData) error {
+			key := execData.Args[0]
+			value, exists := execData.Config.Get(key)
+			if !exists {
+				return execData.Translator.Errorf("config.get.not_found", map[string]string{"key": key})
 			}
-
+			fmt.Printf("%v\n", value)
 			return nil
 		},
 	}

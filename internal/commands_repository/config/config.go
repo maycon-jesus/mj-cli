@@ -8,11 +8,12 @@ import (
 func NewConfigCommand() *commands.Command {
 	setCommand := newSetCommand()
 	getCommand := newGetCommand()
+	generateCommand := newConfigGenerateCommand()
 
 	return &commands.Command{
 		Name:                "config",
 		ShortDescriptionKey: "command.config.short_description",
-		SubCommands:         []*commands.Command{setCommand, getCommand},
+		SubCommands:         []*commands.Command{setCommand, getCommand, generateCommand},
 		RunHelpOnNoArgs:     true,
 		Translations: intl.Translations{
 			"en": {

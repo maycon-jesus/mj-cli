@@ -28,15 +28,22 @@ func newAliasViewCommand() *commands.Command {
 			},
 		},
 		Handler: func(ctx context.Context, execData *commands.ExecData) error {
-			key := fmt.Sprintf("aliases.%s", execData.Args[0])
-			command := execData.Config.GetModule("general").GetString(key)
+			name := execData.Args[0]
 
-			if command == "" {
-				execData.Translator.Println("alias.view.not_found", map[string]string{"name": execData.Args[0]})
+			settings, _ := execData.Config.Get("command.alias.aliases")
+			aliases, ok := settings.(map[string]interface{})
+			if !ok || aliases == nil {
+				execData.Translator.Println("alias.view.not_found", map[string]string{"name": name})
 				return nil
 			}
 
-			fmt.Printf("%s = %s\n", execData.Args[0], command)
+			command, ok := aliases[name].(string)
+			if !ok || command == "" {
+				execData.Translator.Println("alias.view.not_found", map[string]string{"name": name})
+				return nil
+			}
+
+			fmt.Printf("%s = %s\n", name, command)
 			return nil
 		},
 	}

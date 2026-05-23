@@ -3,11 +3,13 @@ package main
 import (
 	_ "embed"
 	"os"
+	"path/filepath"
 
 	"github.com/maycon-jesus/mj-cli/cmd"
 	"github.com/maycon-jesus/mj-cli/internal/commands"
-	"github.com/maycon-jesus/mj-cli/internal/config"
+	commandsrepository "github.com/maycon-jesus/mj-cli/internal/commands_repository"
 	"github.com/maycon-jesus/mj-cli/internal/services"
+	"github.com/maycon-jesus/mj-cli/pkg/config"
 	"github.com/maycon-jesus/mj-cli/pkg/intl"
 	"github.com/maycon-jesus/mj-cli/pkg/logger"
 	"github.com/maycon-jesus/mj-cli/pkg/mjterm"
@@ -30,46 +32,54 @@ func main() {
 
 	log.Info("Iniciando aplicação")
 
-	appDataDir, err := os.UserHomeDir()
+	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		panic(err)
 	}
-	appDataDir = appDataDir + string(os.PathSeparator) + "." + appName
+	appDataDir := filepath.Join(homeDir, "."+appName)
+	if err := os.MkdirAll(appDataDir, os.ModePerm); err != nil {
+		panic(err)
+	}
 	log.Debug("appDataDir setado", "appDataDir", appDataDir)
 
-	newViperAdapter := config.NewViperAdapter("mj-cli")
-	newViperAdapter.SetEnvPrefix("MJ_CLI")
-
-	configRegistry := config.NewConfigRegistry()
-	configRegistry.RegisterModule("general", newViperAdapter)
-
-	if err := newViperAdapter.ReadInConfig(); err != nil {
+	configPath := filepath.Join(appDataDir, "config.yaml")
+	yamlPersister := config.NewYamlModule(configPath)
+	if err := yamlPersister.Load(); err != nil {
 		log.Warn("Falha ao carregar configuração", "error", err.Error())
 	} else {
-		log.Debug("Configuração carregada")
+		log.Debug("Configuração carregada", "path", configPath)
 	}
 
-	lang := newViperAdapter.GetString("lang")
+	configManager := config.NewConfigManager().WithPersister(yamlPersister)
+
+	if err := configManager.AddEntry("lang", "Idioma da UI", "pt-BR"); err != nil {
+		log.Warn("Falha ao registrar entrada de configuração", "key", "lang", "error", err.Error())
+	}
+
+	langValue, _ := configManager.Get("lang")
+	lang, _ := langValue.(string)
 	translator := intl.NewTranslator(lang)
 	log.Debug("Tradutor inicializado", "lang", lang)
 
+	rootCmd := commandsrepository.NewRootCommand()
+
 	app := &commands.App{
 		Logger:     &logger,
-		Config:     configRegistry,
+		Config:     configManager,
 		Translator: translator,
 		Terminal:   term,
 		Version:    appVersion,
 		Name:       appName,
 		Database:   services.NewDatabaseService(appDataDir, "app.db").WithLogger(logger.Log.WithGroup("database")),
+		RootCmd:    rootCmd,
 	}
 
 	cmd.Execute(app)
 
-	if err := newViperAdapter.WriteConfig(); err != nil {
-		log.Error("Falha ao salvar configuração", "error", err.Error())
-		panic(err)
+	if err := configManager.Save(); err != nil {
+		log.Warn("Falha ao salvar configuração", "error", err.Error())
+	} else {
+		log.Debug("Configuração salva")
 	}
-
-	log.Debug("Configuração salva")
 	log.Info("Aplicação finalizada")
 }

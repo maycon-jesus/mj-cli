@@ -2,7 +2,6 @@ package alias_cmd
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/maycon-jesus/mj-cli/internal/commands"
 	"github.com/maycon-jesus/mj-cli/pkg/intl"
@@ -31,10 +30,19 @@ func newAliasSetCommand() *commands.Command {
 			},
 		},
 		Handler: func(ctx context.Context, execData *commands.ExecData) error {
-			key := fmt.Sprintf("aliases.%s", execData.Args[0])
-			execData.Config.GetModule("general").Set(key, execData.Args[1])
-			execData.Config.GetModule("general").WriteConfig()
-			execData.Translator.Println("alias.set.success", map[string]string{"name": execData.Args[0], "command": execData.Args[1]})
+			name := execData.Args[0]
+			command := execData.Args[1]
+
+			settings, _ := execData.Config.Get("command.alias.aliases")
+			aliases, ok := settings.(map[string]interface{})
+			if !ok || aliases == nil {
+				aliases = make(map[string]interface{})
+			}
+
+			aliases[name] = command
+			execData.Config.Set("command.alias.aliases", aliases)
+
+			execData.Translator.Println("alias.set.success", map[string]string{"name": name, "command": command})
 			return nil
 		},
 	}

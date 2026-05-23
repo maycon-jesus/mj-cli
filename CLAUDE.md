@@ -31,7 +31,7 @@ make clean                   # Remove build artifacts and coverage files
 ## Architecture Overview
 
 ### Bootstrap Flow
-`main.go` creates shared services (Terminal, Logger, ConfigRegistry, Translator, DatabaseService), packs them into an `App` struct (along with `Version` from the embedded `VERSION` file and `Name`), and passes it to `cmd.Execute()`. In `cmd/root.go`, a `Registry` registers all command groups, then `AttachToRoot()` converts each custom `Command` into a Cobra command tree via `ToCobraCommand(app)`. Config is saved on exit.
+`main.go` creates shared services (Terminal, Logger, ConfigRegistry, Translator, DatabaseService), builds the command tree via `commandsrepository.NewRootCommand()`, packs everything into an `App` struct (along with `Version` from the embedded `VERSION` file and `Name`), and passes it to `cmd.Execute()`. `cmd.Execute()` calls `app.RootCmd.ToCobraCommand(app)`, which recursively converts the custom `Command` tree into a Cobra command tree. Config is saved on exit.
 
 The app data directory is `~/.mj-cli/` and is also where the SQLite database (`app.db`) lives.
 
@@ -39,16 +39,21 @@ The app data directory is `~/.mj-cli/` and is also where the SQLite database (`a
 The CLI uses a custom command framework built on top of Cobra. The framework is defined in `internal/commands/` and commands are implemented in `internal/commands_repository/`.
 
 **Adding a new command:**
-1. Create a new package under `internal/commands_repository/`
-2. Define a `Command` struct with handlers, flags, and i18n keys
-3. Register in `cmd/root.go` via `registry.RegisterMultiple()`
+1. Create a new package under `internal/commands_repository/` with a `New*Command()` constructor returning a `*Command`
+2. Define the `Command` struct with handlers, flags, `Configs`, and i18n keys; nest children via the `SubCommands` field
+3. Attach it to a parent's `SubCommands` slice — a group command in `commands_repository/`, or `NewRootCommand()` in `internal/commands_repository/root.go` for a top-level command
 
 Commands use `CommandHandler` functions with signature:
 ```go
 func(ctx context.Context, execData *ExecData) error
 ```
 
-`ExecData` provides access to args, flags, config registry, translator, terminal, and logger. A single `Terminal` and `Logger` are created in `main.go` and shared across all command handlers via the `App` struct. Commands also support `BeforeRun`/`AfterRun` hooks.
+`ExecData` provides access to args, flags, config registry, translator, terminal, logger, and `RootCmd` (the full custom command tree). A single `Terminal` and `Logger` are created in `main.go` and shared across all command handlers via the `App` struct.
+
+The `Command` struct also supports:
+- `Configs []Config` — declarative list of config keys (with default values) the command reads. Use this instead of touching the registry ad-hoc; see `internal/commands_repository/cube/scramble.go` for an example. The `config generate` command walks the `ExecData.RootCmd` tree collecting these to emit a default config file.
+- `BeforeRun` / `AfterRun` hooks — run before/after `Handler`. Returning a non-nil error aborts execution and is logged to the file handler. Hooks defined on a parent command are explicitly invoked by every subcommand's `PreRunE`/`PostRunE` (which walk `cmd.Parent()`), so a top-level hook fires for the whole subtree.
+- `RunHelpOnNoArgs` — when true and no `Handler` is set, running the command prints its help (used by group commands like the root).
 
 ### Alias Argument Substitution
 Aliases stored in config use `{{1}}`, `{{2}}`, etc. for positional arguments. When `alias run` is invoked, extra args after the alias name are substituted via `pkg/utils.ReplaceVariables()`.
@@ -71,7 +76,7 @@ JSON-structured logger built on `log/slog` with custom handlers:
 ### Configuration System
 - Uses Viper adapter (`internal/config/`) with registry pattern
 - Modules registered by name (e.g. `"general"`); accessed via `execData.Config.GetModule("general")`
-- Config files: `general.toml` in project dir (`.`) or `~/.mj-cli/` (user), format is TOML
+- Config file is `config.yaml`, searched in the project dir (`.`) then `~/.mj-cli/` (user); format is YAML. `config generate` emits YAML via `yaml.Marshal`
 - Environment override prefix: `MJ_CLI_` (dots replaced with underscores: `MJ_CLI_LANG`)
 - Flags can be bound to config keys via `FlagConfigRegistry` on the `Flag` struct
 - Config persists automatically on exit (WriteConfig in `main.go`)
@@ -87,8 +92,8 @@ Shared business logic used by command handlers. Services wrap `pkg/cmd` calls an
 
 ### Persistence (GORM + SQLite)
 - `DatabaseService` (`internal/services/database.go`) opens a SQLite database via `gorm.io/gorm` + `github.com/glebarez/sqlite` (pure-Go driver, no CGO) at `<appDataDir>/<dbname>` and exposes `*gorm.DB` as `DB`.
-- A single `*DatabaseService` is constructed in `main.go` and shared on the `App` struct.
-- Feature services that need persistence (e.g., `CubexService`) take a `*gorm.DB` in their constructor and call `db.AutoMigrate(...)` on their own models — there is no central migration step. Define models in the same file as the service that owns them.
+- A single `*DatabaseService` is constructed in `main.go` and shared on the `App` struct. `Startup()` is lazy via `sync.Once` and must be called before `DB` is used.
+- No feature service currently persists data. When one is added, it should take `*gorm.DB` in its constructor and call `db.AutoMigrate(...)` on its own models — there is no central migration step. Define models in the same file as the service that owns them.
 
 ### Command Execution (pkg/cmd)
 Three modes for running shell commands:
@@ -107,6 +112,12 @@ Parser handles quotes, escapes, and bash-compatible parsing.
 `pkg/ui` — high-level wrappers on top of tint for consistent UI:
 - `Title()`, `Subtitle()`, `Success()`, `Error()`, `Warning()`, `Info()`, `Lambda()`
 
+### Rubik's Cube Domain (pkg/cube)
+Pure domain library for a 3x3 Rubik's cube, independent of CLI plumbing.
+- `Cube333` represents state as 6 `*CubeFace` arrays; faces are addressed via `FaceU/D/F/B/L/R` constants.
+- Moves are declared as `MovesCollection` (map of move name → `MoveSet`) where each `PieceMove` describes a sticker rotation between two faces. `Cube333MovesCollection` covers the standard `U/D/F/B/L/R` (and their `'`/`2` variants) used by the scramble generator and the `cube scramble` command.
+- When extending moves or adding cube variants, keep state mutation inside this package and have command handlers only call high-level operations (`ApplyMoves`, scramble generators, etc.) — don't reach into faces from the command layer.
+
 ## Project Conventions
 
 - **Go version**: 1.25.4
@@ -121,9 +132,10 @@ Parser handles quotes, escapes, and bash-compatible parsing.
 | Purpose | Location |
 |---------|----------|
 | Main entry | `main.go` |
-| CLI setup | `cmd/root.go` |
+| CLI setup (`Execute`) | `cmd/root.go` |
+| Command tree root | `internal/commands_repository/root.go` |
 | Command framework | `internal/commands/` |
-| Command implementations | `internal/commands_repository/{alias,config,git,log,semver}/` |
+| Command implementations | `internal/commands_repository/{alias,config,cube,git,log,semver}/` |
 | Services | `internal/services/` |
 | Config management | `internal/config/` |
 | Command execution | `pkg/cmd/` |
@@ -132,3 +144,4 @@ Parser handles quotes, escapes, and bash-compatible parsing.
 | Logging | `pkg/logger/` |
 | Terminal styling | `pkg/tint/` |
 | UI templates | `pkg/ui/` |
+| Rubik's cube domain | `pkg/cube/` |
