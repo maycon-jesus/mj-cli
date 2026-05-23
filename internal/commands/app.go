@@ -1,8 +1,8 @@
 package commands
 
 import (
-	"github.com/maycon-jesus/mj-cli/internal/config"
 	"github.com/maycon-jesus/mj-cli/internal/services"
+	"github.com/maycon-jesus/mj-cli/pkg/config"
 	"github.com/maycon-jesus/mj-cli/pkg/intl"
 	"github.com/maycon-jesus/mj-cli/pkg/logger"
 	"github.com/maycon-jesus/mj-cli/pkg/mjterm"
@@ -10,7 +10,7 @@ import (
 
 type App struct {
 	Logger     *logger.Logger
-	Config     *config.ConfigRegistry
+	Config     *config.ConfigManager
 	Translator *intl.Translator
 	Terminal   *mjterm.Terminal
 	Database   *services.DatabaseService

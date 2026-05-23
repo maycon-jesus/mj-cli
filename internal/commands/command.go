@@ -4,7 +4,7 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/maycon-jesus/mj-cli/internal/config"
+	"github.com/maycon-jesus/mj-cli/pkg/config"
 	"github.com/maycon-jesus/mj-cli/pkg/intl"
 	"github.com/maycon-jesus/mj-cli/pkg/mjterm"
 	"github.com/spf13/cobra"
@@ -75,14 +75,13 @@ type Config struct {
 }
 
 type ExecData struct {
-	Args          []string
-	Flags         *pflag.FlagSet
-	Config        *config.ConfigRegistry
-	ConfigGeneral config.ConfigModule
-	Translator    *intl.Translator
-	Terminal      *mjterm.Terminal
-	Logger        *slog.Logger
-	RootCmd       *Command
+	Args       []string
+	Flags      *pflag.FlagSet
+	Config     config.ReadOnlyConfig
+	Translator *intl.Translator
+	Terminal   *mjterm.Terminal
+	Logger     *slog.Logger
+	RootCmd    *Command
 }
 
 func (c *Command) ToCobraCommand(app *App) *cobra.Command {
@@ -90,6 +89,17 @@ func (c *Command) ToCobraCommand(app *App) *cobra.Command {
 
 	// Adiciona traduções ao tradutor
 	app.Translator.AddMessagesBulk(c.Translations)
+
+	// Configs
+	for key, cfg := range c.Configs {
+		description := ""
+		if cfg.DescriptionKey != "" {
+			description = app.Translator.T(cfg.DescriptionKey, nil)
+		}
+		if err := app.Config.AddEntry(key, description, cfg.DefaultValue); err != nil {
+			app.Logger.Log.Warn("Falha ao registrar entrada de configuração", "key", key, "error", err.Error())
+		}
+	}
 
 	// Cria o comando cobra
 	cmd := &cobra.Command{
@@ -219,9 +229,6 @@ func (c *Command) addFlag(app *App, cmd *cobra.Command, flag Flag) {
 	case []string:
 		flags.StringSliceP(flag.Name, flag.Shorthand, v, app.Translator.T(flag.DescriptionKey, nil))
 	}
-	if flag.ConfigRegistry != (FlagConfigRegistry{}) {
-		app.Config.GetModule(flag.ConfigRegistry.RegistryName).BindPFlag(flag.ConfigRegistry.Key, flags.Lookup(flag.Name))
-	}
 
 	if flag.Required {
 		app.Logger.Log.Debug("Marking flag as required", "flag", flag.Name, "command", c.Name)
@@ -234,13 +241,12 @@ func (c *Command) addFlag(app *App, cmd *cobra.Command, flag Flag) {
 
 func createExecData(app *App, cmd *cobra.Command, args []string) *ExecData {
 	return &ExecData{
-		Args:          args,
-		Flags:         cmd.Flags(),
-		Config:        app.Config,
-		ConfigGeneral: app.Config.GetModule("general"),
-		Translator:    app.Translator,
-		Terminal:      app.Terminal,
-		Logger:        app.Logger.Log,
-		RootCmd:       app.RootCmd,
+		Args:       args,
+		Flags:      cmd.Flags(),
+		Config:     app.Config,
+		Translator: app.Translator,
+		Terminal:   app.Terminal,
+		Logger:     app.Logger.Log,
+		RootCmd:    app.RootCmd,
 	}
 }

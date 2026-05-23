@@ -29,18 +29,20 @@ func newAliasRunCommand() *commands.Command {
 			},
 		},
 		Handler: func(ctx context.Context, execData *commands.ExecData) error {
-			key := fmt.Sprintf("command.alias.aliases.%s", execData.Args[0])
-			command := execData.ConfigGeneral.GetString(key)
+			name := execData.Args[0]
+
+			settings, _ := execData.Config.Get("command.alias.aliases")
+			aliases, _ := settings.(map[string]interface{})
+			command, _ := aliases[name].(string)
 
 			variables := make(map[string]string)
-
 			for i, value := range execData.Args[1:] {
 				variables[fmt.Sprintf("%d", i+1)] = value
 			}
 
 			command = utils.ReplaceVariables(command, variables)
 
-			output := ui.Title("Executando alias " + execData.Args[0])
+			output := ui.Title("Executando alias " + name)
 			execData.Terminal.Println(output)
 			execData.Terminal.StartSpinner("cmd", "Executando alias...")
 			output = ui.Lambda(command)
